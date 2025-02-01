@@ -1,0 +1,24 @@
+{
+    "manifest_version": 3,
+    "name": "Header Clipper",
+    "version": "1.0",
+    "description": "Easily copy headers in a secure manner",
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "48": "icons/icon48.png"
+        }
+    },
+    "permissions": [
+        "webRequest",
+        "tabs",
+        "storage"
+    ],
+    "host_permissions": [
+        "http://*/*",
+        "https://*/*"
+    ],
+    "background": {
+        "service_worker": "background.bundle.js"
+    }
+}
