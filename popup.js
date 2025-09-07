@@ -106,10 +106,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 left.className = "trace-left";
 
                 const req = document.createElement("div");
-                req.className = "req-id";
-                // show a short friendly label but keep full value in title for tooltip
-                req.title = trace.requestId || "";
-                req.textContent = trace.requestId ? `Req: ${trace.requestId}` : "Req: —";
+                req.className = "req-title";
+
+                if (trace.operationName) {
+                    req.textContent = trace.operationName
+
+                } else if (trace.requestId) {
+                    req.textContent = `Req: ${trace.requestId}`
+                } else {
+                    req.textContent = "Req: —"
+                }
+                req.title = trace.updatedAt ? new Date(trace.updatedAt).toLocaleString() : "";
+                req.title = `${req.title} - ${req.textContent}`
 
                 const small = document.createElement("div");
                 small.className = "trace-small";
