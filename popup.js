@@ -1,57 +1,87 @@
-import { NEW_REQUEST_ACTION_DATA } from './constants'
+document.addEventListener("DOMContentLoaded", () => {
+    const container = document.getElementById("container");
+    const clearBtn = document.getElementById("clearBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
 
-let copiedElementName;
-let latestRequest;
+    async function render() {
+        container.innerHTML = "<div class='small'>Loading…</div>";
+        chrome.runtime.sendMessage({ type: "GET_CURRENT" }, (resp) => {
+            if (!resp || !resp.ok) {
+                container.innerHTML = "<div class='small'>Error reading data.</div>";
+                return;
+            }
+            const data = resp.data;
+            if (!data) {
+                container.innerHTML = "<div class='small'>No Authorization header captured for the current tab. Trigger a request from the tab.</div>";
+                return;
+            }
 
-const COPIED_ELEMENT_CHECK_REMOVE_TIME_IN_MS = 1000
+            container.innerHTML = "";
 
-function getClipboardIconElement(name, value) {
-    const span = document.createElement('span');
-    if (name !== copiedElementName) {
-        span.className = 'copy-btn'
-        span.innerHTML = '<i class="fas fa-copy"></i>'
-        span.addEventListener('click', copyToClipboard.bind(null, name, value))
-        return span
+            const urlDiv = document.createElement("div");
+            urlDiv.className = "tab-url";
+            urlDiv.title = data.url;
+            urlDiv.textContent = data.url || `Tab ${data.tabId}`;
+            container.appendChild(urlDiv);
+
+            data.headerNames.forEach(hName => {
+                const row = document.createElement("div");
+                row.className = "header-row";
+
+                const name = document.createElement("div");
+                name.className = "hname";
+                name.textContent = hName;
+
+                const actions = document.createElement("div");
+                const copyBtn = document.createElement("i");
+                copyBtn.className = "fas fa-copy icon";
+                copyBtn.title = "Copy hidden value";
+
+                copyBtn.addEventListener("click", async () => {
+                    copyBtn.classList.add("fa-spin");
+                    chrome.runtime.sendMessage({ type: "GET_VALUE", headerName: hName }, async (resp2) => {
+                        copyBtn.classList.remove("fa-spin");
+                        if (!resp2 || !resp2.ok) {
+                            alert("Header value not found.");
+                            return;
+                        }
+                        const value = resp2.value;
+                        await navigator.clipboard.writeText(value);
+
+                        copyBtn.classList.remove("fa-copy");
+                        copyBtn.classList.add("fa-check");
+                        setTimeout(() => {
+                            copyBtn.classList.remove("fa-check");
+                            copyBtn.classList.add("fa-copy");
+                        }, 1200);
+                    });
+                });
+
+                actions.appendChild(copyBtn);
+                row.appendChild(name);
+                row.appendChild(actions);
+                container.appendChild(row);
+            });
+
+            const meta = document.createElement("div");
+            meta.className = "small";
+            meta.style.marginTop = "8px";
+            const t = new Date(data.updatedAt);
+            meta.textContent = `Captured: ${t.toLocaleString()}`;
+            container.appendChild(meta);
+        });
     }
 
-    span.className = 'check-btn'
-    span.innerHTML = '<i class="fa-solid fa-check"></i>'
-
-    return span
-}
-
-function updateRequestDataUI(latestRequest) {
-    const parentDiv = document.getElementById('headers');
-    parentDiv.innerHTML = ''
-
-    latestRequest?.headers ? Object.entries(latestRequest.headers).forEach(([name, value], index) => {
-        const headerItemElement = document.createElement('div');
-        headerItemElement.className = 'header-item'
-        headerItemElement.innerHTML = `
-            <span>${index + 1}.</span>
-            <span class="header-name">${name}</span>    
-        `
-        headerItemElement.append(getClipboardIconElement(name, value))
-
-        parentDiv.append(headerItemElement)
-    }) : ''
-}
-
-function copyToClipboard(name, textToCopy) {
-    console.log(textToCopy)
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        copiedElementName = name;
-        updateRequestDataUI(latestRequest)
-        setTimeout(() => {
-            copiedElementName = undefined
-            updateRequestDataUI(latestRequest)
-        }, COPIED_ELEMENT_CHECK_REMOVE_TIME_IN_MS)
+    clearBtn.addEventListener("click", () => {
+        chrome.runtime.sendMessage({ type: "CLEAR" }, (resp) => {
+            if (resp && resp.ok) {
+                render();
+            }
+        });
     });
-}
 
-chrome.storage.local.get([NEW_REQUEST_ACTION_DATA], (result) => {
-    if (result[NEW_REQUEST_ACTION_DATA]) {
-        latestRequest = result[NEW_REQUEST_ACTION_DATA]
-        updateRequestDataUI(latestRequest)
-    }
+    refreshBtn.addEventListener("click", () => render());
+
+    // initial render
+    render();
 });

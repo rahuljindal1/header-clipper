@@ -4,7 +4,8 @@
   "description": "",
   "main": "popup.js",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack",
+    "dev": "webpack --mode development --watch"
   },
   "keywords": [],
   "author": "",
