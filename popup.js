@@ -1,11 +1,19 @@
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("container");
+    const responseTraceContainer = document.getElementById("responseTraceContainer")
     const clearBtn = document.getElementById("clearBtn");
     const refreshBtn = document.getElementById("refreshBtn");
 
     async function render() {
         container.innerHTML = "<div class='small'>Loading…</div>";
-        chrome.runtime.sendMessage({ type: "GET_CURRENT" }, (resp) => {
+
+        await renderRequestHeader()
+        await renderResponseTraces()
+    }
+
+    async function renderRequestHeader() {
+
+        chrome.runtime.sendMessage({ type: "GET_ALL_REQUEST_HEADERS" }, (resp) => {
             if (!resp || !resp.ok) {
                 container.innerHTML = "<div class='small'>Error reading data.</div>";
                 return;
@@ -19,10 +27,17 @@ document.addEventListener("DOMContentLoaded", () => {
             container.innerHTML = "";
 
             const urlDiv = document.createElement("div");
-            urlDiv.className = "tab-url";
+            urlDiv.className = "section-heading";
+            urlDiv.style.marginTop = "16px";
             urlDiv.title = data.url;
             urlDiv.textContent = data.url || `Tab ${data.tabId}`;
             container.appendChild(urlDiv);
+
+            const meta = document.createElement("div");
+            meta.className = "small";
+            const t = new Date(data.updatedAt);
+            meta.textContent = `Captured: ${t.toLocaleString()}`;
+            container.appendChild(meta);
 
             data.headerNames.forEach(hName => {
                 const row = document.createElement("div");
@@ -39,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 copyBtn.addEventListener("click", async () => {
                     copyBtn.classList.add("fa-spin");
-                    chrome.runtime.sendMessage({ type: "GET_VALUE", headerName: hName }, async (resp2) => {
+                    chrome.runtime.sendMessage({ type: "GET_REQUEST_HEADER_VALUE", headerName: hName }, async (resp2) => {
                         copyBtn.classList.remove("fa-spin");
                         if (!resp2 || !resp2.ok) {
                             alert("Header value not found.");
@@ -62,17 +77,92 @@ document.addEventListener("DOMContentLoaded", () => {
                 row.appendChild(actions);
                 container.appendChild(row);
             });
-
-            const meta = document.createElement("div");
-            meta.className = "small";
-            meta.style.marginTop = "8px";
-            const t = new Date(data.updatedAt);
-            meta.textContent = `Captured: ${t.toLocaleString()}`;
-            container.appendChild(meta);
         });
     }
 
+    async function renderResponseTraces() {
+        chrome.runtime.sendMessage({ type: "GET_ALL_RESPONSE_TRACES" }, (resp) => {
+            if (!resp || !resp.ok) {
+                responseTraceContainer.innerHTML = "<div class='small'>Error reading data.</div>";
+                return;
+            }
+            const data = resp.data;
+            if (!data) {
+                responseTraceContainer.innerHTML = "<div class='small'>No Authorization header captured for the current tab. Trigger a request from the tab.</div>";
+                return;
+            }
+
+            const header = document.createElement("div");
+            header.className = "section-heading";
+            header.textContent = `Captured traces (${data.length})`;
+            responseTraceContainer.appendChild(header);
+
+            data.forEach(trace => {
+                // trace is expected to be { requestId, traceId, ... }
+                const row = document.createElement("div");
+                row.className = "trace-row";
+
+                const left = document.createElement("div");
+                left.className = "trace-left";
+
+                const req = document.createElement("div");
+                req.className = "req-id";
+                // show a short friendly label but keep full value in title for tooltip
+                req.title = trace.requestId || "";
+                req.textContent = trace.requestId ? `Req: ${trace.requestId}` : "Req: —";
+
+                const small = document.createElement("div");
+                small.className = "trace-small";
+                small.textContent = trace.traceId ? `Trace ID: ${trace.traceId.substring(0, 40)}${trace.traceId && trace.traceId.length > 40 ? "…" : ""}` : "Trace ID: —";
+                small.title = trace.traceId || "";
+
+                left.appendChild(req);
+                left.appendChild(small);
+
+                const actions = document.createElement("div");
+                actions.className = "trace-actions";
+
+                const copyBtn = document.createElement("i");
+                copyBtn.className = "fas fa-copy icon";
+                copyBtn.title = "Copy traceId";
+
+                copyBtn.addEventListener("click", async () => {
+                    try {
+                        copyBtn.classList.add("fa-spin");
+                        // data already contains traceId — copy directly
+                        const value = trace.traceId || "";
+                        if (!value) {
+                            alert("Trace ID not available.");
+                            return;
+                        }
+                        await navigator.clipboard.writeText(value);
+
+                        copyBtn.classList.remove("fa-spin");
+                        copyBtn.classList.remove("fa-copy");
+                        copyBtn.classList.add("fa-check");
+
+                        setTimeout(() => {
+                            copyBtn.classList.remove("fa-check");
+                            copyBtn.classList.add("fa-copy");
+                        }, 1200);
+                    } catch (err) {
+                        copyBtn.classList.remove("fa-spin");
+                        alert("Failed to copy trace id.");
+                        console.error("copy trace error:", err);
+                    }
+                });
+
+                actions.appendChild(copyBtn);
+                row.appendChild(left);
+                row.appendChild(actions);
+                responseTraceContainer.appendChild(row);
+            })
+        })
+    }
+
     clearBtn.addEventListener("click", () => {
+        container.innerHTML = ''
+        responseTraceContainer.innerHTML = ''
         chrome.runtime.sendMessage({ type: "CLEAR" }, (resp) => {
             if (resp && resp.ok) {
                 render();
@@ -80,7 +170,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    refreshBtn.addEventListener("click", () => render());
+    refreshBtn.addEventListener("click", () => {
+        container.innerHTML = ''
+        responseTraceContainer.innerHTML = ''
+        render()
+    });
 
     // initial render
     render();

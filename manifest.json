@@ -14,7 +14,8 @@
         "tabs",
         "storage",
         "clipboardWrite",
-        "activeTab"
+        "activeTab",
+        "webRequest"
     ],
     "host_permissions": [
         "http://*/*",
