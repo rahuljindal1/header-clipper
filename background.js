@@ -113,11 +113,11 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
                 return;
             }
 
-            // match monolith.<env>.scriptsense.co.nz
+            // match api.<env>.scriptsense.co.nz
             const urlObj = new URL(details.url);
             const host = urlObj.hostname;
             if (
-                !host.startsWith("monolith.") ||
+                !host.startsWith("api.") ||
                 !host.endsWith(".scriptsense.co.nz")
             ) {
                 return;
@@ -157,11 +157,11 @@ chrome.webRequest.onHeadersReceived.addListener(
                 return;
             }
 
-            // match monolith.<env>.scriptsense.co.nz
+            // match api.<env>.scriptsense.co.nz
             const urlObj = new URL(details.url);
             const host = urlObj.hostname;
             if (
-                !host.startsWith("monolith.") ||
+                !host.startsWith("api.") ||
                 !host.endsWith(".scriptsense.co.nz")
             ) {
                 return;
