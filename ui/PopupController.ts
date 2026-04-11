@@ -1,5 +1,5 @@
 import { ChromeApi } from "../services/ChromeApi";
-import { PREF_INCLUDE_BEARER } from "../constants";
+import { PREF_INCLUDE_BEARER, PREF_TRACE_TTL_MINUTES, PREF_TRACE_MAX_COUNT, PREF_TRACE_MIN_HITS } from "../constants";
 import { HeadersResponse, HeaderValueResponse, TracesResponse, Trace, ClearResponse } from "../types";
 
 export class PopupController {
@@ -19,6 +19,12 @@ export class PopupController {
             refreshBtn: document.getElementById("refreshBtn"),
             toast: document.getElementById("toast"),
             bearerToggle: document.getElementById("bearerToggle"),
+            settingsToggle: document.getElementById("settingsToggle"),
+            settingsBody: document.getElementById("settingsBody"),
+            settingsChevron: document.getElementById("settingsChevron"),
+            ttlInput: document.getElementById("ttlInput"),
+            maxCountInput: document.getElementById("maxCountInput"),
+            minHitsInput: document.getElementById("minHitsInput"),
         };
 
         const savedPref = await this.api.getPreference(this.PREF_INCLUDE_BEARER);
@@ -34,6 +40,40 @@ export class PopupController {
         });
 
         this.els.refreshBtn!.addEventListener("click", () => this.render());
+
+        this.els.settingsToggle!.addEventListener("click", () => {
+            const body = this.els.settingsBody!;
+            const isOpen = body.style.display !== "none";
+            body.style.display = isOpen ? "none" : "block";
+            this.els.settingsChevron!.classList.toggle("open", !isOpen);
+        });
+
+        const savedTtl = await this.api.getPreference(PREF_TRACE_TTL_MINUTES);
+        if (savedTtl) (this.els.ttlInput as HTMLInputElement).value = String(savedTtl);
+
+        const savedMax = await this.api.getPreference(PREF_TRACE_MAX_COUNT);
+        if (savedMax) (this.els.maxCountInput as HTMLInputElement).value = String(savedMax);
+
+        const savedMinHits = await this.api.getPreference(PREF_TRACE_MIN_HITS);
+        if (savedMinHits) (this.els.minHitsInput as HTMLInputElement).value = String(savedMinHits);
+
+        this.els.ttlInput!.addEventListener("change", () => {
+            const val = Number((this.els.ttlInput as HTMLInputElement).value) || 0;
+            this.api.setPreference(PREF_TRACE_TTL_MINUTES, val);
+            this.render();
+        });
+
+        this.els.maxCountInput!.addEventListener("change", () => {
+            const val = Number((this.els.maxCountInput as HTMLInputElement).value) || 0;
+            this.api.setPreference(PREF_TRACE_MAX_COUNT, val);
+            this.render();
+        });
+
+        this.els.minHitsInput!.addEventListener("change", () => {
+            const val = Number((this.els.minHitsInput as HTMLInputElement).value) || 0;
+            this.api.setPreference(PREF_TRACE_MIN_HITS, val);
+            this.render();
+        });
 
         this.render();
     }

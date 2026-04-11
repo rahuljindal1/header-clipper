@@ -11,3 +11,6 @@ export const STORE_RESPONSE_HEADERS = "response_headers";
 
 // Preference keys
 export const PREF_INCLUDE_BEARER = "includeBearer";
+export const PREF_TRACE_TTL_MINUTES = "tracesTtlMinutes";
+export const PREF_TRACE_MAX_COUNT = "tracesMaxCount";
+export const PREF_TRACE_MIN_HITS = "tracesMinHits";

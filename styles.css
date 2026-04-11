@@ -280,3 +280,69 @@ button i {
     font-size: 12px;
     line-height: 1.5;
 }
+
+/* ── Settings section ── */
+.settings-section {
+    margin: 0 16px 12px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.06),
+        0 1px 2px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+.settings-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    user-select: none;
+    transition: background 0.1s ease;
+}
+.settings-toggle:hover {
+    background: #f8fafc;
+}
+.settings-chevron {
+    margin-left: auto;
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+.settings-chevron.open {
+    transform: rotate(180deg);
+}
+.settings-body {
+    padding: 0 14px 12px;
+}
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+}
+.settings-row label {
+    font-size: 12px;
+    color: #374151;
+}
+.settings-row input[type="number"] {
+    width: 60px;
+    padding: 4px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    text-align: right;
+    outline: none;
+}
+.settings-row input[type="number"]:focus {
+    border-color: #228be6;
+}
+.settings-hint {
+    font-size: 11px;
+    color: #9ca3af;
+    line-height: 1.4;
+    margin-top: 4px;
+}

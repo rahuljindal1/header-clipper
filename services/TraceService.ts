@@ -7,6 +7,9 @@ import {
     STORE_REQUEST_HEADERS,
     STORE_RESPONSE_HEADERS,
     STORE_REQUEST_PAYLOADS,
+    PREF_TRACE_TTL_MINUTES,
+    PREF_TRACE_MAX_COUNT,
+    PREF_TRACE_MIN_HITS,
 } from "../constants";
 import { Message, Trace } from "../types";
 
@@ -89,8 +92,14 @@ export class TraceService {
     }
 
     private getAllTraces(sendResponse: SendResponse) {
-        Promise.all([this.api.getStorage(STORE_RESPONSE_HEADERS), this.api.getStorage(STORE_REQUEST_PAYLOADS)])
-            .then(([responseHeaders, requestPayloads]: [any, any]) => {
+        Promise.all([
+            this.api.getStorage(STORE_RESPONSE_HEADERS),
+            this.api.getStorage(STORE_REQUEST_PAYLOADS),
+            this.api.getPreference(PREF_TRACE_TTL_MINUTES),
+            this.api.getPreference(PREF_TRACE_MAX_COUNT),
+            this.api.getPreference(PREF_TRACE_MIN_HITS),
+        ])
+            .then(([responseHeaders, requestPayloads, ttlPref, maxPref, minHitsPref]: [any, any, unknown, unknown, unknown]) => {
                 if (Object.keys(responseHeaders).length === 0) {
                     sendResponse({ ok: true, data: null });
                     return;
@@ -124,7 +133,24 @@ export class TraceService {
                     }
                 });
 
-                const traces = Array.from(grouped.values()).sort((a, b) => b.updatedAt - a.updatedAt);
+                let traces = Array.from(grouped.values()).sort((a, b) => b.updatedAt - a.updatedAt);
+
+                const ttl = Number(ttlPref) || 0;
+                if (ttl > 0) {
+                    const cutoff = Date.now() - ttl * 60 * 1000;
+                    traces = traces.filter((t) => t.updatedAt >= cutoff);
+                }
+
+                const max = Number(maxPref) || 0;
+                if (max > 0) {
+                    traces = traces.slice(0, max);
+                }
+
+                const minHits = Number(minHitsPref) || 0;
+                if (minHits > 0) {
+                    traces = traces.filter((t) => t.count >= minHits);
+                }
+
                 sendResponse({ ok: true, data: traces });
             })
             .catch((err: unknown) => {

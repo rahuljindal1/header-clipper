@@ -34,6 +34,7 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
                     count: 1,
                 },
                 { traceId: "1a2b3c4d5e6f7g8h9i0j", requestId: "1003", updatedAt: Date.now() - 60000, count: 12 },
+                { traceId: "old9876trace5432value10", requestId: "1004", updatedAt: Date.now() - 600000, operationName: "OldQuery", count: 3 },
             ],
         },
         CLEAR: { ok: true },
@@ -44,7 +45,27 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
         runtime: {
             sendMessage: function (msg, cb) {
                 setTimeout(function () {
-                    cb(mockData[msg.type] || { ok: false });
+                    var resp = mockData[msg.type] || { ok: false };
+
+                    if (msg.type === "GET_ALL_RESPONSE_TRACES" && resp.data) {
+                        var data = resp.data.slice();
+                        var ttl = Number(mockStorage["tracesTtlMinutes"]) || 0;
+                        if (ttl > 0) {
+                            var cutoff = Date.now() - ttl * 60 * 1000;
+                            data = data.filter(function (t) { return t.updatedAt >= cutoff; });
+                        }
+                        var max = Number(mockStorage["tracesMaxCount"]) || 0;
+                        if (max > 0) {
+                            data = data.slice(0, max);
+                        }
+                        var minHits = Number(mockStorage["tracesMinHits"]) || 0;
+                        if (minHits > 0) {
+                            data = data.filter(function (t) { return t.count >= minHits; });
+                        }
+                        resp = { ok: true, data: data };
+                    }
+
+                    cb(resp);
                 }, 150);
             },
         },
