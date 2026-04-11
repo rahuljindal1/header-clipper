@@ -133,15 +133,17 @@ export class PopupController {
             const req = document.createElement("div");
             req.className = "req-title";
 
-            if (trace.operationName) {
-                req.textContent = trace.operationName;
-            } else if (trace.requestId) {
-                req.textContent = `Req: ${trace.requestId}`;
-            } else {
-                req.textContent = "Req: —";
+            const label = trace.operationName || (trace.requestId ? `Req: ${trace.requestId}` : "Req: —");
+            req.textContent = label;
+            if (trace.count > 1) {
+                const badge = document.createElement("span");
+                badge.className = "trace-count";
+                badge.textContent = `${trace.count}`;
+                badge.title = `${trace.count} requests`;
+                req.appendChild(badge);
             }
             req.title = trace.updatedAt ? new Date(trace.updatedAt).toLocaleString() : "";
-            req.title = `${req.title} - ${req.textContent}`;
+            req.title = `${req.title} - ${label}`;
 
             const small = document.createElement("div");
             small.className = "trace-small";

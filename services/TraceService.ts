@@ -96,21 +96,35 @@ export class TraceService {
                     return;
                 }
 
-                const traces: Trace[] = [];
+                const grouped = new Map<string, Trace>();
                 Object.entries(responseHeaders).forEach(([requestId, value]: [string, any]) => {
                     const traceId = value.headers["X-Traceid"];
                     if (traceId) {
                         const requestBody = requestPayloads[requestId];
-                        traces.push({
-                            traceId,
-                            requestId,
-                            updatedAt: value.updatedAt,
-                            operationName: requestBody?.operationName,
-                        });
+                        const operationName = requestBody?.operationName;
+                        const key = operationName || value.url || requestId;
+                        const existing = grouped.get(key);
+
+                        if (existing) {
+                            existing.count++;
+                            if (value.updatedAt > existing.updatedAt) {
+                                existing.traceId = traceId;
+                                existing.requestId = requestId;
+                                existing.updatedAt = value.updatedAt;
+                            }
+                        } else {
+                            grouped.set(key, {
+                                traceId,
+                                requestId,
+                                updatedAt: value.updatedAt,
+                                operationName,
+                                count: 1,
+                            });
+                        }
                     }
                 });
 
-                traces.reverse();
+                const traces = Array.from(grouped.values()).sort((a, b) => b.updatedAt - a.updatedAt);
                 sendResponse({ ok: true, data: traces });
             })
             .catch((err: unknown) => {

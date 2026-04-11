@@ -242,6 +242,21 @@ button i {
     overflow: hidden;
     font-family: "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
+.trace-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    margin-left: 6px;
+    border-radius: 9px;
+    background: #228be6;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    vertical-align: middle;
+}
 .trace-actions {
     display: flex;
     align-items: center;

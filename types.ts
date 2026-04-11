@@ -36,6 +36,7 @@ export interface Trace {
     requestId: string;
     updatedAt: number;
     operationName?: string;
+    count: number;
 }
 
 export interface TracesResponse {
