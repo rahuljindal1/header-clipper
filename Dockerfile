@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/devcontainers/javascript-node:20
 
-# Minimal utilities only
+# Install minimal tools
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -8,4 +8,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /workspace
 
-RUN chown -R node:node /workspace
+# Switch to node user BEFORE global installs
+USER node
+
+# Install Claude Code globally
+RUN npm install -g @anthropic-ai/claude-code
+
+# (optional) verify install
+RUN claude --version || true
