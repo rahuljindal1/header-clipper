@@ -5,6 +5,7 @@ export const MSG_GET_ALL_RESPONSE_TRACES = "GET_ALL_RESPONSE_TRACES";
 export const MSG_CLEAR = "CLEAR";
 
 // Storage keys
+export const STORE_SESSION_START = "session_start";
 export const STORE_REQUEST_HEADERS = "request_headers";
 export const STORE_REQUEST_PAYLOADS = "request_payloads";
 export const STORE_RESPONSE_HEADERS = "response_headers";

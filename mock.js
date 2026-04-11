@@ -40,7 +40,7 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
         CLEAR: { ok: true },
     };
 
-    var mockStorage = {};
+    var mockStorage = { session_start: Date.now() };
     window.chrome = {
         runtime: {
             sendMessage: function (msg, cb) {

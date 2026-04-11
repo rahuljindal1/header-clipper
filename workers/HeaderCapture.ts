@@ -1,5 +1,5 @@
 import { ChromeApi } from "../services/ChromeApi";
-import { STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS } from "../constants";
+import { STORE_SESSION_START, STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS } from "../constants";
 
 export class HeaderCapture {
     private api: ChromeApi;
@@ -17,6 +17,8 @@ export class HeaderCapture {
         } catch (e) {
             console.warn("Header Clipper init tabs.query failed:", e);
         }
+
+        await this.api.setStorage(STORE_SESSION_START, Date.now());
 
         this.bindTabListeners();
         this.bindWebRequestListeners();

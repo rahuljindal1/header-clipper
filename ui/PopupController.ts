@@ -1,5 +1,11 @@
 import { ChromeApi } from "../services/ChromeApi";
-import { PREF_INCLUDE_BEARER, PREF_TRACE_TTL_MINUTES, PREF_TRACE_MAX_COUNT, PREF_TRACE_MIN_HITS } from "../constants";
+import {
+    PREF_INCLUDE_BEARER,
+    PREF_TRACE_TTL_MINUTES,
+    PREF_TRACE_MAX_COUNT,
+    PREF_TRACE_MIN_HITS,
+    STORE_SESSION_START,
+} from "../constants";
 import { HeadersResponse, HeaderValueResponse, TracesResponse, Trace, ClearResponse } from "../types";
 
 export class PopupController {
@@ -25,6 +31,8 @@ export class PopupController {
             ttlInput: document.getElementById("ttlInput"),
             maxCountInput: document.getElementById("maxCountInput"),
             minHitsInput: document.getElementById("minHitsInput"),
+            sessionTime: document.getElementById("sessionTime"),
+            sessionTimer: document.getElementById("sessionTimer"),
         };
 
         const savedPref = await this.api.getPreference(this.PREF_INCLUDE_BEARER);
@@ -75,7 +83,24 @@ export class PopupController {
             this.render();
         });
 
+        this.startSessionTimer();
         this.render();
+    }
+
+    private async startSessionTimer() {
+        const stored = await this.api.getStorage(STORE_SESSION_START);
+        const startTime = typeof stored === "number" ? stored : Date.now();
+        const tick = () => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const h = String(Math.floor(elapsed / 3600)).padStart(2, "0");
+            const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
+            const s = String(elapsed % 60).padStart(2, "0");
+            this.els.sessionTime!.textContent = `${h}:${m}:${s}`;
+            const totalMin = Math.floor(elapsed / 60);
+            this.els.sessionTimer!.setAttribute("data-tooltip", `Session running for ${totalMin} minute${totalMin !== 1 ? "s" : ""}`);
+        };
+        tick();
+        setInterval(tick, 1000);
     }
 
     private async render() {
