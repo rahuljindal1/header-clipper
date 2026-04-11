@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function render() {
         container.innerHTML = "<div class='small'><i class='fas fa-spinner fa-spin'></i> Loading…</div>";
+        responseTraceContainer.innerHTML = "";
 
         await renderRequestHeader()
         await renderResponseTraces()
@@ -189,8 +190,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     clearBtn.addEventListener("click", () => {
-        container.innerHTML = ''
-        responseTraceContainer.innerHTML = ''
         chrome.runtime.sendMessage({ type: "CLEAR" }, (resp) => {
             if (resp && resp.ok) {
                 render();
@@ -199,9 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     refreshBtn.addEventListener("click", () => {
-        container.innerHTML = ''
-        responseTraceContainer.innerHTML = ''
-        render()
+        render();
     });
 
     // initial render
