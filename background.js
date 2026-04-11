@@ -1,29 +1,20 @@
-const REQUEST_HEADER_STORE_KEY = "request_headers";
-const REQUEST_BODY_STORE_KEY = "request_payloads";
-const RESPONSE_HEADER_STORE_KEY = "response_headers";
-let currentActiveTabId = null;
+import * as api from "./chromeApi.js";
+import {
+    MSG_GET_ALL_REQUEST_HEADERS,
+    MSG_GET_REQUEST_HEADER_VALUE,
+    MSG_GET_ALL_RESPONSE_TRACES,
+    MSG_CLEAR,
+    STORE_REQUEST_HEADERS,
+    STORE_REQUEST_PAYLOADS,
+    STORE_RESPONSE_HEADERS,
+} from "./constants.js";
 
-function safeGetStorage(key) {
-    return new Promise((res) =>
-        chrome.storage.local.get([key], (r) => res(r[key] || {}))
-    );
-}
-function safeSetStorage(key, value) {
-    return new Promise((res, rej) => {
-        chrome.storage.local.set({ [key]: value }, () => {
-            if (chrome.runtime.lastError) return rej(chrome.runtime.lastError);
-            res();
-        });
-    });
-}
+let currentActiveTabId = null;
 
 // Initialize current active tab on service worker start
 (async function init() {
     try {
-        const tabs = await chrome.tabs.query({
-            active: true,
-            lastFocusedWindow: true,
-        });
+        const tabs = await api.queryActiveTabs();
         if (tabs && tabs.length) currentActiveTabId = tabs[0].id;
     } catch (e) {
         console.warn("Header Clipper init tabs.query failed:", e);
@@ -31,27 +22,20 @@ function safeSetStorage(key, value) {
 })();
 
 // Keep currentActiveTabId up to date
-chrome.tabs.onActivated.addListener((activeInfo) => {
+api.onTabActivated((activeInfo) => {
     currentActiveTabId = activeInfo.tabId;
 });
 
-// Clean up when active tab is removed - clear stored header
-chrome.tabs.onRemoved.addListener((tabId) => {
+// Clean up when active tab is removed
+api.onTabRemoved((tabId) => {
     if (tabId === currentActiveTabId) {
         currentActiveTabId = null;
-        chrome.storage.local.remove(REQUEST_HEADER_STORE_KEY);
-        chrome.storage.local.remove(RESPONSE_HEADER_STORE_KEY);
-        chrome.storage.local.remove(REQUEST_BODY_STORE_KEY);
+        api.removeStorage(STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS);
     }
 });
 
 // Helper to store headers for the current tab only
-async function saveRequestHeaderForCurrentTab(
-    headerName,
-    headerValue,
-    url,
-    tabId
-) {
+async function saveRequestHeaderForCurrentTab(headerName, headerValue, url, tabId) {
     if (!currentActiveTabId || tabId !== currentActiveTabId) return;
     const payload = {
         tabId: String(tabId),
@@ -59,20 +43,12 @@ async function saveRequestHeaderForCurrentTab(
         headers: { [headerName]: headerValue },
         updatedAt: Date.now(),
     };
-    await safeSetStorage(REQUEST_HEADER_STORE_KEY, payload);
+    await api.setStorage(STORE_REQUEST_HEADERS, payload);
 }
 
-async function saveResponseHeadersForCurrentTab(
-    headerName,
-    headerValue,
-    url,
-    tabId,
-    requestId
-) {
-    if (!currentActiveTabId || tabId !== currentActiveTabId) {
-        return;
-    }
-    const savedResponses = await safeGetStorage(RESPONSE_HEADER_STORE_KEY);
+async function saveResponseHeadersForCurrentTab(headerName, headerValue, url, tabId, requestId) {
+    if (!currentActiveTabId || tabId !== currentActiveTabId) return;
+    const savedResponses = await api.getStorage(STORE_RESPONSE_HEADERS);
     savedResponses[requestId] = {
         tabId: String(tabId),
         requestId,
@@ -80,198 +56,134 @@ async function saveResponseHeadersForCurrentTab(
         headers: { [headerName]: headerValue },
         updatedAt: Date.now(),
     };
-    await safeSetStorage(RESPONSE_HEADER_STORE_KEY, savedResponses);
+    await api.setStorage(STORE_RESPONSE_HEADERS, savedResponses);
 }
 
-async function saveOperationNamesForCurrentTab(
-    operationName,
-    tabId,
-    requestId
-) {
-    if (!currentActiveTabId || tabId !== currentActiveTabId) {
-        return;
-    }
-    const savedOperationNames = await safeGetStorage(REQUEST_BODY_STORE_KEY);
+async function saveOperationNamesForCurrentTab(operationName, tabId, requestId) {
+    if (!currentActiveTabId || tabId !== currentActiveTabId) return;
+    const savedOperationNames = await api.getStorage(STORE_REQUEST_PAYLOADS);
     savedOperationNames[requestId] = {
         requestId,
         operationName,
         tabId: String(tabId),
         updatedAt: Date.now(),
     };
-    await safeSetStorage(REQUEST_BODY_STORE_KEY, savedOperationNames);
+    await api.setStorage(STORE_REQUEST_PAYLOADS, savedOperationNames);
 }
 
+const URL_FILTER = { urls: ["*://*.scriptsense.co.nz/*"] };
+
 // Observe outgoing requests; only capture headers for the active tab
-chrome.webRequest.onBeforeSendHeaders.addListener(
-    (details) => {
-        try {
-            if (!details.requestHeaders) {
-                return;
-            }
-            // Only consider requests that belong to a tab and match active tab id
-            if (!details.tabId || details.tabId !== currentActiveTabId) {
-                return;
-            }
+api.onBeforeSendHeaders((details) => {
+    try {
+        if (!details.requestHeaders) return;
+        if (!details.tabId || details.tabId !== currentActiveTabId) return;
 
-            // match api.<env>.scriptsense.co.nz
-            const urlObj = new URL(details.url);
-            const host = urlObj.hostname;
-            if (
-                !host.startsWith("api.") ||
-                !host.endsWith(".scriptsense.co.nz")
-            ) {
-                return;
-            }
+        const urlObj = new URL(details.url);
+        const host = urlObj.hostname;
+        if (!host.startsWith("api.") || !host.endsWith(".scriptsense.co.nz")) return;
 
-            const authHeader = details.requestHeaders.find(
-                (h) => h.name.toLowerCase() === "authorization"
-            );
-            if (authHeader && authHeader.value) {
-                saveRequestHeaderForCurrentTab(
-                    "Authorization",
-                    authHeader.value,
-                    details.url,
-                    details.tabId
-                );
-            }
-        } catch (e) {
-            console.error("Header Clipper (current-tab) error:", e);
+        const authHeader = details.requestHeaders.find(
+            (h) => h.name.toLowerCase() === "authorization"
+        );
+        if (authHeader && authHeader.value) {
+            saveRequestHeaderForCurrentTab("Authorization", authHeader.value, details.url, details.tabId);
         }
-    },
-    { urls: ["*://*.scriptsense.co.nz/*"] },
-    ["requestHeaders"]
-);
+    } catch (e) {
+        console.error("Header Clipper (current-tab) error:", e);
+    }
+}, URL_FILTER);
 
-/**
- * Capture response headers so we can read `x-trace-id` (or any other response header).
- * Uses onHeadersReceived which has access to responseHeaders.
- */
-chrome.webRequest.onHeadersReceived.addListener(
-    (details) => {
-        try {
-            if (!details.responseHeaders) {
-                return;
-            }
-            // Only consider requests that belong to a tab and match active tab id
-            if (!details.tabId || details.tabId !== currentActiveTabId) {
-                return;
-            }
+// Capture response headers for x-trace-id
+api.onHeadersReceived((details) => {
+    try {
+        if (!details.responseHeaders) return;
+        if (!details.tabId || details.tabId !== currentActiveTabId) return;
 
-            // match api.<env>.scriptsense.co.nz
-            const urlObj = new URL(details.url);
-            const host = urlObj.hostname;
-            if (
-                !host.startsWith("api.") ||
-                !host.endsWith(".scriptsense.co.nz")
-            ) {
-                return;
-            }
+        const urlObj = new URL(details.url);
+        const host = urlObj.hostname;
+        if (!host.startsWith("api.") || !host.endsWith(".scriptsense.co.nz")) return;
 
-            const traceIdHeader = details.responseHeaders.find(
-                (h) => h.name.toLowerCase() === "x-traceid"
-            );
-            if (traceIdHeader) {
-                saveResponseHeadersForCurrentTab(
-                    "X-Traceid",
-                    traceIdHeader.value,
-                    details.url,
-                    details.tabId,
-                    details.requestId
-                );
-            }
-        } catch (e) {
-            console.error("Header Clipper (current-tab) error:", e);
+        const traceIdHeader = details.responseHeaders.find(
+            (h) => h.name.toLowerCase() === "x-traceid"
+        );
+        if (traceIdHeader) {
+            saveResponseHeadersForCurrentTab("X-Traceid", traceIdHeader.value, details.url, details.tabId, details.requestId);
         }
-    },
-    { urls: ["*://*.scriptsense.co.nz/*"] },
-    ["responseHeaders"]
-);
+    } catch (e) {
+        console.error("Header Clipper (current-tab) error:", e);
+    }
+}, URL_FILTER);
 
-chrome.webRequest.onBeforeRequest.addListener(
-    (details) => {
-        try {
-            if (!details.tabId || details.tabId < 0) {
-                return;
-            }
-            if (!details.requestBody) {
-                return;
-            }
+// Capture GraphQL operation names from request body
+api.onBeforeRequest((details) => {
+    try {
+        if (!details.tabId || details.tabId < 0) return;
+        if (!details.requestBody) return;
 
-            let bodyString = "";
-            if (details.requestBody.raw && details.requestBody.raw.length) {
-                const chunks = details.requestBody.raw.map((chunk) => {
-                    if (!chunk || !chunk.bytes) return "";
-                    try {
-                        return new TextDecoder("utf-8").decode(chunk.bytes);
-                    } catch (e) {
-                        return "";
-                    }
-                });
-                bodyString = chunks.join("");
-            } else if (details.requestBody.formData) {
-                // Try a likely form-data field
-                const fd = details.requestBody.formData;
-                for (const k in fd) {
-                    if (Array.isArray(fd[k]) && fd[k].length) {
-                        bodyString = fd[k][0];
-                        break;
-                    }
+        let bodyString = "";
+        if (details.requestBody.raw && details.requestBody.raw.length) {
+            const chunks = details.requestBody.raw.map((chunk) => {
+                if (!chunk || !chunk.bytes) return "";
+                try {
+                    return new TextDecoder("utf-8").decode(chunk.bytes);
+                } catch (e) {
+                    return "";
+                }
+            });
+            bodyString = chunks.join("");
+        } else if (details.requestBody.formData) {
+            const fd = details.requestBody.formData;
+            for (const k in fd) {
+                if (Array.isArray(fd[k]) && fd[k].length) {
+                    bodyString = fd[k][0];
+                    break;
                 }
             }
-
-            if (!bodyString) return;
-
-            let parsed;
-            try {
-                parsed = JSON.parse(bodyString);
-            } catch (e) {
-                return;
-            }
-
-            const operationName = parsed.operationName || null;
-            if (operationName) {
-                saveOperationNamesForCurrentTab(operationName, details.tabId, details.requestId);
-            }
-        } catch (err) {
-            console.error("onBeforeRequest error:", err);
         }
-    },
-    { urls: ["*://*.scriptsense.co.nz/*"] },
-    ["requestBody"]
-);
 
-// Simple message API for popup
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (msg && msg.type === "GET_ALL_REQUEST_HEADERS") {
-        sendAllRequestHeaders(sendResponse);
-        return true; // async
+        if (!bodyString) return;
+
+        let parsed;
+        try {
+            parsed = JSON.parse(bodyString);
+        } catch (e) {
+            return;
+        }
+
+        const operationName = parsed.operationName || null;
+        if (operationName) {
+            saveOperationNamesForCurrentTab(operationName, details.tabId, details.requestId);
+        }
+    } catch (err) {
+        console.error("onBeforeRequest error:", err);
     }
+}, URL_FILTER);
 
-    if (msg && msg.type === "GET_REQUEST_HEADER_VALUE") {
+// Message API for popup
+api.onMessage((msg, sender, sendResponse) => {
+    if (msg && msg.type === MSG_GET_ALL_REQUEST_HEADERS) {
+        sendAllRequestHeaders(sendResponse);
+        return true;
+    }
+    if (msg && msg.type === MSG_GET_REQUEST_HEADER_VALUE) {
         sendRequestHeaderValue(msg, sendResponse);
         return true;
     }
-
-    if (msg && msg.type === "GET_ALL_RESPONSE_TRACES") {
+    if (msg && msg.type === MSG_GET_ALL_RESPONSE_TRACES) {
         sendAllResponseTraces(sendResponse);
         return true;
     }
-
-    if (msg && msg.type === "CLEAR") {
-        Promise.all([
-            chrome.storage.local.remove(REQUEST_HEADER_STORE_KEY),
-            chrome.storage.local.remove(RESPONSE_HEADER_STORE_KEY),
-            chrome.storage.local.remove(REQUEST_BODY_STORE_KEY),
-        ]).then(() => sendResponse({ ok: true }));
+    if (msg && msg.type === MSG_CLEAR) {
+        api.removeStorage(STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS)
+            .then(() => sendResponse({ ok: true }));
         return true;
     }
 });
 
 function sendAllRequestHeaders(sendResponse) {
-    chrome.storage.local.get(REQUEST_HEADER_STORE_KEY).then((all) => {
-        const obj = all[REQUEST_HEADER_STORE_KEY] || null;
-        // Only return metadata (not the raw header value) to list names
-        if (!obj) {
+    api.getStorage(STORE_REQUEST_HEADERS).then((obj) => {
+        if (!obj || !obj.headers) {
             sendResponse({ ok: true, data: null });
         } else {
             sendResponse({
@@ -291,10 +203,8 @@ function sendAllRequestHeaders(sendResponse) {
 }
 
 function sendRequestHeaderValue(msg, sendResponse) {
-    // Return the raw header value for the current stored entry (popup will copy)
-    chrome.storage.local.get(REQUEST_HEADER_STORE_KEY).then((all) => {
-        const obj = all[REQUEST_HEADER_STORE_KEY] || null;
-        if (!obj) {
+    api.getStorage(STORE_REQUEST_HEADERS).then((obj) => {
+        if (!obj || !obj.headers) {
             sendResponse({ ok: false, error: "No header stored for current tab." });
         } else {
             const val = obj.headers[msg.headerName];
@@ -309,12 +219,9 @@ function sendRequestHeaderValue(msg, sendResponse) {
 
 function sendAllResponseTraces(sendResponse) {
     Promise.all([
-        chrome.storage.local.get(RESPONSE_HEADER_STORE_KEY),
-        chrome.storage.local.get(REQUEST_BODY_STORE_KEY),
-    ]).then(([allResponseHeaders, allRequestPayloads]) => {
-        const responseHeaders = allResponseHeaders[RESPONSE_HEADER_STORE_KEY] || {};
-        const requestPayloads = allRequestPayloads[REQUEST_BODY_STORE_KEY] || {};
-
+        api.getStorage(STORE_RESPONSE_HEADERS),
+        api.getStorage(STORE_REQUEST_PAYLOADS),
+    ]).then(([responseHeaders, requestPayloads]) => {
         if (Object.keys(responseHeaders).length === 0) {
             sendResponse({ ok: true, data: null });
             return;
@@ -334,12 +241,8 @@ function sendAllResponseTraces(sendResponse) {
             }
         });
 
-        // Reverse traces to get the latest first
         traces.reverse();
-        sendResponse({
-            ok: true,
-            data: traces,
-        });
+        sendResponse({ ok: true, data: traces });
     }).catch((err) => {
         console.error("sendAllResponseTraces error:", err);
         sendResponse({ ok: false, error: "Failed to read response traces." });
