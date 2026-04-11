@@ -76,6 +76,10 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
                 }, 150);
             },
         },
+        action: {
+            setBadgeText: function () {},
+            setBadgeBackgroundColor: function () {},
+        },
         storage: {
             local: {
                 get: function (keys, cb) {

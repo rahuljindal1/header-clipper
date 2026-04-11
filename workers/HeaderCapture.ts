@@ -1,13 +1,16 @@
 import { ChromeApi } from "../services/ChromeApi";
+import { BadgeService } from "../services/BadgeService";
 import { STORE_SESSION_START, STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS } from "../constants";
 
 export class HeaderCapture {
     private api: ChromeApi;
+    private badge: BadgeService;
     private currentActiveTabId: number | null = null;
     private URL_FILTER: chrome.webRequest.RequestFilter = { urls: ["*://*.scriptsense.co.nz/*"] };
 
-    constructor(api: ChromeApi) {
+    constructor(api: ChromeApi, badge: BadgeService) {
         this.api = api;
+        this.badge = badge;
     }
 
     public async init() {
@@ -33,6 +36,7 @@ export class HeaderCapture {
             if (tabId === this.currentActiveTabId) {
                 this.currentActiveTabId = null;
                 this.api.removeStorage(STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS);
+                this.badge.clear();
             }
         });
     }
@@ -143,6 +147,7 @@ export class HeaderCapture {
             updatedAt: Date.now(),
         };
         await this.api.setStorage(STORE_RESPONSE_HEADERS, saved);
+        this.badge.update();
     }
 
     private async saveOperationName(operationName: string, tabId: number, requestId: string) {

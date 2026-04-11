@@ -4,6 +4,8 @@ import {
     PREF_TRACE_TTL_MINUTES,
     PREF_TRACE_MAX_COUNT,
     PREF_TRACE_MIN_HITS,
+    PREF_BADGE_MODE,
+    MSG_UPDATE_BADGE,
     STORE_SESSION_START,
 } from "../constants";
 import { HeadersResponse, HeaderValueResponse, TracesResponse, Trace, ClearResponse } from "../types";
@@ -33,6 +35,8 @@ export class PopupController {
             minHitsInput: document.getElementById("minHitsInput"),
             sessionTime: document.getElementById("sessionTime"),
             sessionTimer: document.getElementById("sessionTimer"),
+            badgeModeSelect: document.getElementById("badgeModeSelect"),
+            settingsSummary: document.getElementById("settingsSummary"),
         };
 
         const savedPref = await this.api.getPreference(this.PREF_INCLUDE_BEARER);
@@ -68,21 +72,34 @@ export class PopupController {
         this.els.ttlInput!.addEventListener("change", () => {
             const val = Number((this.els.ttlInput as HTMLInputElement).value) || 0;
             this.api.setPreference(PREF_TRACE_TTL_MINUTES, val);
+            this.updateSettingsSummary();
             this.render();
         });
 
         this.els.maxCountInput!.addEventListener("change", () => {
             const val = Number((this.els.maxCountInput as HTMLInputElement).value) || 0;
             this.api.setPreference(PREF_TRACE_MAX_COUNT, val);
+            this.updateSettingsSummary();
             this.render();
         });
 
         this.els.minHitsInput!.addEventListener("change", () => {
             const val = Number((this.els.minHitsInput as HTMLInputElement).value) || 0;
             this.api.setPreference(PREF_TRACE_MIN_HITS, val);
+            this.updateSettingsSummary();
             this.render();
         });
 
+        const savedBadgeMode = await this.api.getPreference(PREF_BADGE_MODE);
+        if (savedBadgeMode) (this.els.badgeModeSelect as HTMLSelectElement).value = String(savedBadgeMode);
+
+        this.els.badgeModeSelect!.addEventListener("change", () => {
+            this.api.setPreference(PREF_BADGE_MODE, (this.els.badgeModeSelect as HTMLSelectElement).value);
+            this.api.sendMessage({ type: MSG_UPDATE_BADGE });
+            this.updateSettingsSummary();
+        });
+
+        this.updateSettingsSummary();
         this.startSessionTimer();
         this.render();
     }
@@ -287,6 +304,28 @@ export class PopupController {
             return value.substring(7);
         }
         return value;
+    }
+
+    private updateSettingsSummary() {
+        const ttl = Number((this.els.ttlInput as HTMLInputElement).value) || 0;
+        const max = Number((this.els.maxCountInput as HTMLInputElement).value) || 0;
+        const minHits = Number((this.els.minHitsInput as HTMLInputElement).value) || 0;
+        const badgeMode = (this.els.badgeModeSelect as HTMLSelectElement).value;
+
+        const chips: { label: string; active: boolean }[] = [];
+        chips.push({ label: ttl > 0 ? `TTL ${ttl}m` : "TTL off", active: ttl > 0 });
+        chips.push({ label: max > 0 ? `Max ${max}` : "Max off", active: max > 0 });
+        chips.push({ label: minHits > 0 ? `Min ${minHits}` : "Min off", active: minHits > 0 });
+        chips.push({ label: badgeMode === "max_hits" ? "Top hits" : "Total", active: true });
+
+        const container = this.els.settingsSummary!;
+        container.innerHTML = "";
+        chips.forEach((chip) => {
+            const el = document.createElement("span");
+            el.className = `settings-chip${chip.active ? " active" : ""}`;
+            el.textContent = chip.label;
+            container.appendChild(el);
+        });
     }
 
     private showToast(msg: string, isError: boolean) {

@@ -1,9 +1,11 @@
 import { ChromeApi } from "./ChromeApi";
+import { BadgeService } from "./BadgeService";
 import {
     MSG_GET_ALL_REQUEST_HEADERS,
     MSG_GET_REQUEST_HEADER_VALUE,
     MSG_GET_ALL_RESPONSE_TRACES,
     MSG_CLEAR,
+    MSG_UPDATE_BADGE,
     STORE_REQUEST_HEADERS,
     STORE_RESPONSE_HEADERS,
     STORE_REQUEST_PAYLOADS,
@@ -17,9 +19,11 @@ type SendResponse = (response: unknown) => void;
 
 export class TraceService {
     private api: ChromeApi;
+    private badge: BadgeService;
 
-    constructor(api: ChromeApi) {
+    constructor(api: ChromeApi, badge: BadgeService) {
         this.api = api;
+        this.badge = badge;
     }
 
     public listen() {
@@ -45,6 +49,11 @@ export class TraceService {
         }
         if (msg.type === MSG_CLEAR) {
             this.clear(sendResponse);
+            return true;
+        }
+        if (msg.type === MSG_UPDATE_BADGE) {
+            this.badge.update();
+            sendResponse({ ok: true });
             return true;
         }
     }
@@ -162,6 +171,9 @@ export class TraceService {
     private clear(sendResponse: SendResponse) {
         this.api
             .removeStorage(STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS)
-            .then(() => sendResponse({ ok: true }));
+            .then(() => {
+                this.badge.clear();
+                sendResponse({ ok: true });
+            });
     }
 }

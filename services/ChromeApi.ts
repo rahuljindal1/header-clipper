@@ -85,6 +85,20 @@ export class ChromeApi {
         });
     }
 
+    // ── Badge ──
+
+    public setBadgeText(text: string) {
+        chrome.action.setBadgeText({ text });
+    }
+
+    public setBadgeBackgroundColor(color: string) {
+        chrome.action.setBadgeBackgroundColor({ color });
+    }
+
+    public setBadgeTextColor(color: string) {
+        chrome.action.setBadgeTextColor({ color });
+    }
+
     // ── Popup convenience methods ──
 
     public getAllRequestHeaders() {

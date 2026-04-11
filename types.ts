@@ -3,6 +3,7 @@ import {
     MSG_GET_REQUEST_HEADER_VALUE,
     MSG_GET_ALL_RESPONSE_TRACES,
     MSG_CLEAR,
+    MSG_UPDATE_BADGE,
 } from "./constants";
 
 export interface Message {
@@ -10,7 +11,8 @@ export interface Message {
         | typeof MSG_GET_ALL_REQUEST_HEADERS
         | typeof MSG_GET_REQUEST_HEADER_VALUE
         | typeof MSG_GET_ALL_RESPONSE_TRACES
-        | typeof MSG_CLEAR;
+        | typeof MSG_CLEAR
+        | typeof MSG_UPDATE_BADGE;
     headerName?: string;
 }
 

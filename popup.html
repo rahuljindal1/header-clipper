@@ -18,10 +18,6 @@
             <div class="session-timer" id="sessionTimer"><i class="fas fa-clock"></i> <span id="sessionTime">--:--:--</span></div>
         </div>
 
-        <div class="hint">
-            Only header names are shown. Click the copy icon to copy the hidden value for the current active tab.
-        </div>
-
         <div class="controls">
             <button id="clearBtn"><i class="fas fa-trash-alt"></i> Clear</button>
             <button id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
@@ -39,6 +35,7 @@
                 <span>Settings</span>
                 <i class="fas fa-chevron-down settings-chevron" id="settingsChevron"></i>
             </div>
+            <div class="settings-summary" id="settingsSummary"></div>
             <div class="settings-body" id="settingsBody" style="display: none">
                 <div class="settings-row">
                     <label for="ttlInput">Auto-clear after (min)</label>
@@ -51,6 +48,13 @@
                 <div class="settings-row">
                     <label for="minHitsInput">Min hit count</label>
                     <input type="number" id="minHitsInput" min="0" placeholder="0" />
+                </div>
+                <div class="settings-row">
+                    <label for="badgeModeSelect">Badge shows</label>
+                    <select id="badgeModeSelect">
+                        <option value="total">Total requests</option>
+                        <option value="max_hits">Top hit count</option>
+                    </select>
                 </div>
                 <div class="settings-hint">Set to 0 or leave empty for no limit.</div>
             </div>

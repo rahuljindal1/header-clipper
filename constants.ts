@@ -3,6 +3,7 @@ export const MSG_GET_ALL_REQUEST_HEADERS = "GET_ALL_REQUEST_HEADERS";
 export const MSG_GET_REQUEST_HEADER_VALUE = "GET_REQUEST_HEADER_VALUE";
 export const MSG_GET_ALL_RESPONSE_TRACES = "GET_ALL_RESPONSE_TRACES";
 export const MSG_CLEAR = "CLEAR";
+export const MSG_UPDATE_BADGE = "UPDATE_BADGE";
 
 // Storage keys
 export const STORE_SESSION_START = "session_start";
@@ -15,3 +16,4 @@ export const PREF_INCLUDE_BEARER = "includeBearer";
 export const PREF_TRACE_TTL_MINUTES = "tracesTtlMinutes";
 export const PREF_TRACE_MAX_COUNT = "tracesMaxCount";
 export const PREF_TRACE_MIN_HITS = "tracesMinHits";
+export const PREF_BADGE_MODE = "badgeMode";
