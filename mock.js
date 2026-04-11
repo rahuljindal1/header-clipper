@@ -14,7 +14,7 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
         },
         GET_REQUEST_HEADER_VALUE: {
             ok: true,
-            value: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.mock-token-value",
+            value: "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.mock-token-value",
         },
         GET_ALL_RESPONSE_TRACES: {
             ok: true,
@@ -27,10 +27,24 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
         CLEAR: { ok: true },
     };
 
+    var mockStorage = {};
     window.chrome = {
         runtime: {
             sendMessage: function (msg, cb) {
                 setTimeout(function () { cb(mockData[msg.type] || { ok: false }); }, 150);
+            },
+        },
+        storage: {
+            local: {
+                get: function (keys, cb) {
+                    var result = {};
+                    keys.forEach(function (k) { if (mockStorage[k] !== undefined) result[k] = mockStorage[k]; });
+                    if (cb) cb(result);
+                },
+                set: function (obj, cb) {
+                    Object.keys(obj).forEach(function (k) { mockStorage[k] = obj[k]; });
+                    if (cb) cb();
+                },
             },
         },
     };

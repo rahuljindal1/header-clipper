@@ -4,6 +4,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const clearBtn = document.getElementById("clearBtn");
     const refreshBtn = document.getElementById("refreshBtn");
     const toast = document.getElementById("toast");
+    const bearerToggle = document.getElementById("bearerToggle");
+
+    // Restore saved preference
+    chrome.storage?.local?.get(["includeBearer"], (result) => {
+        if (result && result.includeBearer) {
+            bearerToggle.checked = true;
+        }
+    });
+
+    bearerToggle.addEventListener("change", () => {
+        chrome.storage?.local?.set({ includeBearer: bearerToggle.checked });
+    });
+
+    function stripBearerPrefix(value) {
+        if (!bearerToggle.checked && value.toLowerCase().startsWith("bearer ")) {
+            return value.substring(7);
+        }
+        return value;
+    }
 
     function showToast(msg, isError) {
         toast.textContent = msg;
@@ -75,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 showToast("Header value not found.", true);
                                 return;
                             }
-                            const value = resp2.value;
+                            const value = stripBearerPrefix(resp2.value);
                             await navigator.clipboard.writeText(value);
 
                             copyBtn.classList.remove("fa-copy");

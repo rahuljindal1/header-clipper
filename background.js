@@ -127,18 +127,12 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
                 (h) => h.name.toLowerCase() === "authorization"
             );
             if (authHeader && authHeader.value) {
-                const parts = authHeader.value.split(" ");
-                const token = parts.length === 2 && parts[0].toLowerCase() === "bearer"
-                    ? parts[1]
-                    : authHeader.value;
-                if (token) {
-                    saveRequestHeaderForCurrentTab(
-                        "Authorization",
-                        token,
-                        details.url,
-                        details.tabId
-                    );
-                }
+                saveRequestHeaderForCurrentTab(
+                    "Authorization",
+                    authHeader.value,
+                    details.url,
+                    details.tabId
+                );
             }
         } catch (e) {
             console.error("Header Clipper (current-tab) error:", e);
