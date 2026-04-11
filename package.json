@@ -1,23 +1,32 @@
 {
-  "name": "header-clipper",
-  "version": "1.0.0",
-  "description": "",
-  "main": "popup.js",
-  "scripts": {
-    "build": "webpack --mode production",
-    "dev": "webpack --mode development --watch"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/chrome": "^0.1.40",
-    "copy-webpack-plugin": "^12.0.2",
-    "css-loader": "^7.1.2",
-    "style-loader": "^4.0.0",
-    "ts-loader": "^9.5.7",
-    "typescript": "^6.0.2",
-    "webpack": "^5.97.1",
-    "webpack-cli": "^6.0.1"
-  }
+    "name": "header-clipper",
+    "version": "1.0.0",
+    "description": "",
+    "main": "popup.js",
+    "scripts": {
+        "build": "webpack --mode production",
+        "dev": "webpack --mode development --watch",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@types/chrome": "^0.1.40",
+        "copy-webpack-plugin": "^12.0.2",
+        "css-loader": "^7.1.2",
+        "eslint": "^10.2.0",
+        "eslint-config-prettier": "^10.1.8",
+        "prettier": "^3.8.2",
+        "style-loader": "^4.0.0",
+        "ts-loader": "^9.5.7",
+        "typescript": "^6.0.2",
+        "typescript-eslint": "^8.58.1",
+        "webpack": "^5.97.1",
+        "webpack-cli": "^6.0.1"
+    }
 }
