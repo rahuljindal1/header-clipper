@@ -3,15 +3,15 @@ import { PREF_INCLUDE_BEARER } from "../constants";
 import { HeadersResponse, HeaderValueResponse, TracesResponse, Trace, ClearResponse } from "../types";
 
 export class PopupController {
-    api: ChromeApi;
-    PREF_INCLUDE_BEARER = PREF_INCLUDE_BEARER;
-    els: Record<string, HTMLElement | null> = {};
+    private api: ChromeApi;
+    private PREF_INCLUDE_BEARER = PREF_INCLUDE_BEARER;
+    private els: Record<string, HTMLElement | null> = {};
 
     constructor(api: ChromeApi) {
         this.api = api;
     }
 
-    async init() {
+    public async init() {
         this.els = {
             container: document.getElementById("container"),
             traceContainer: document.getElementById("responseTraceContainer"),
@@ -38,15 +38,15 @@ export class PopupController {
         this.render();
     }
 
-    async render() {
+    private async render() {
         this.els.container!.innerHTML = "<div class='small'><i class='fas fa-spinner fa-spin'></i> Loading…</div>";
         this.els.traceContainer!.innerHTML = "";
 
-        await this._renderHeaders();
-        await this._renderTraces();
+        await this.renderHeaders();
+        await this.renderTraces();
     }
 
-    async _renderHeaders() {
+    private async renderHeaders() {
         const resp: HeadersResponse = await this.api.getAllRequestHeaders();
 
         if (!resp || !resp.ok) {
@@ -93,7 +93,7 @@ export class PopupController {
             copyBtn.className = "fas fa-copy icon";
             copyBtn.title = "Copy hidden value";
 
-            copyBtn.addEventListener("click", () => this._copyHeaderValue(hName, copyBtn));
+            copyBtn.addEventListener("click", () => this.copyHeaderValue(hName, copyBtn));
 
             actions.appendChild(copyBtn);
             row.appendChild(name);
@@ -102,7 +102,7 @@ export class PopupController {
         });
     }
 
-    async _renderTraces() {
+    private async renderTraces() {
         const resp: TracesResponse = await this.api.getAllResponseTraces();
 
         if (!resp || !resp.ok) {
@@ -160,7 +160,7 @@ export class PopupController {
             copyBtn.className = "fas fa-copy icon";
             copyBtn.title = "Copy traceId";
 
-            copyBtn.addEventListener("click", () => this._copyTraceId(trace.traceId, copyBtn));
+            copyBtn.addEventListener("click", () => this.copyTraceId(trace.traceId, copyBtn));
 
             actions.appendChild(copyBtn);
             row.appendChild(left);
@@ -169,17 +169,17 @@ export class PopupController {
         });
     }
 
-    async _copyHeaderValue(headerName: string, iconEl: HTMLElement) {
+    private async copyHeaderValue(headerName: string, iconEl: HTMLElement) {
         iconEl.classList.add("fa-spin");
         const resp: HeaderValueResponse = await this.api.getRequestHeaderValue(headerName);
         iconEl.classList.remove("fa-spin");
 
         if (!resp || !resp.ok) {
-            this._showToast("Header value not found.", true);
+            this.showToast("Header value not found.", true);
             return;
         }
 
-        const value = this._stripBearerPrefix(resp.value!);
+        const value = this.stripBearerPrefix(resp.value!);
         await navigator.clipboard.writeText(value);
 
         iconEl.classList.remove("fa-copy");
@@ -190,12 +190,12 @@ export class PopupController {
         }, 1200);
     }
 
-    async _copyTraceId(traceId: string, iconEl: HTMLElement) {
+    private async copyTraceId(traceId: string, iconEl: HTMLElement) {
         try {
             iconEl.classList.add("fa-spin");
             const value = traceId || "";
             if (!value) {
-                this._showToast("Trace ID not available.", true);
+                this.showToast("Trace ID not available.", true);
                 return;
             }
             await navigator.clipboard.writeText(value);
@@ -210,19 +210,19 @@ export class PopupController {
             }, 1200);
         } catch (err) {
             iconEl.classList.remove("fa-spin");
-            this._showToast("Failed to copy trace id.", true);
+            this.showToast("Failed to copy trace id.", true);
             console.error("copy trace error:", err);
         }
     }
 
-    _stripBearerPrefix(value: string) {
+    private stripBearerPrefix(value: string) {
         if (!(this.els.bearerToggle as HTMLInputElement).checked && value.toLowerCase().startsWith("bearer ")) {
             return value.substring(7);
         }
         return value;
     }
 
-    _showToast(msg: string, isError: boolean) {
+    private showToast(msg: string, isError: boolean) {
         this.els.toast!.textContent = msg;
         this.els.toast!.classList.toggle("toast-error", !!isError);
         this.els.toast!.classList.add("show");

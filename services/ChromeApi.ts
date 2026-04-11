@@ -9,11 +9,11 @@ import { Message } from "../types";
 export class ChromeApi {
     // ── Storage ──
 
-    getStorage(key: string): Promise<any> {
+    public getStorage(key: string): Promise<any> {
         return new Promise((resolve) => chrome.storage.local.get([key], (r) => resolve(r[key] || {})));
     }
 
-    setStorage(key: string, value: any): Promise<void> {
+    public setStorage(key: string, value: any): Promise<void> {
         return new Promise((resolve, reject) => {
             chrome.storage.local.set({ [key]: value }, () => {
                 if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
@@ -22,27 +22,27 @@ export class ChromeApi {
         });
     }
 
-    removeStorage(...keys: string[]) {
+    public removeStorage(...keys: string[]) {
         return Promise.all(keys.map((k) => chrome.storage.local.remove(k)));
     }
 
     // ── Tabs ──
 
-    queryActiveTabs() {
+    public queryActiveTabs() {
         return chrome.tabs.query({ active: true, lastFocusedWindow: true });
     }
 
-    onTabActivated(callback: (activeInfo: chrome.tabs.OnActivatedInfo) => void) {
+    public onTabActivated(callback: (activeInfo: chrome.tabs.OnActivatedInfo) => void) {
         chrome.tabs.onActivated.addListener(callback);
     }
 
-    onTabRemoved(callback: (tabId: number) => void) {
+    public onTabRemoved(callback: (tabId: number) => void) {
         chrome.tabs.onRemoved.addListener(callback);
     }
 
     // ── Web Request ──
 
-    onBeforeSendHeaders(
+    public onBeforeSendHeaders(
         callback: (
             details: chrome.webRequest.OnBeforeSendHeadersDetails,
         ) => chrome.webRequest.BlockingResponse | undefined,
@@ -51,7 +51,7 @@ export class ChromeApi {
         chrome.webRequest.onBeforeSendHeaders.addListener(callback, filter, ["requestHeaders"]);
     }
 
-    onHeadersReceived(
+    public onHeadersReceived(
         callback: (
             details: chrome.webRequest.OnHeadersReceivedDetails,
         ) => chrome.webRequest.BlockingResponse | undefined,
@@ -60,7 +60,7 @@ export class ChromeApi {
         chrome.webRequest.onHeadersReceived.addListener(callback, filter, ["responseHeaders"]);
     }
 
-    onBeforeRequest(
+    public onBeforeRequest(
         callback: (details: chrome.webRequest.OnBeforeRequestDetails) => chrome.webRequest.BlockingResponse | undefined,
         filter: chrome.webRequest.RequestFilter,
     ) {
@@ -69,7 +69,7 @@ export class ChromeApi {
 
     // ── Runtime messaging ──
 
-    onMessage(
+    public onMessage(
         callback: (
             msg: Message,
             sender: chrome.runtime.MessageSender,
@@ -79,7 +79,7 @@ export class ChromeApi {
         chrome.runtime.onMessage.addListener(callback);
     }
 
-    sendMessage(msg: Message): Promise<any> {
+    public sendMessage(msg: Message): Promise<any> {
         return new Promise((resolve) => {
             chrome.runtime.sendMessage(msg, (resp) => resolve(resp));
         });
@@ -87,23 +87,23 @@ export class ChromeApi {
 
     // ── Popup convenience methods ──
 
-    getAllRequestHeaders() {
+    public getAllRequestHeaders() {
         return this.sendMessage({ type: MSG_GET_ALL_REQUEST_HEADERS });
     }
 
-    getRequestHeaderValue(headerName: string) {
+    public getRequestHeaderValue(headerName: string) {
         return this.sendMessage({ type: MSG_GET_REQUEST_HEADER_VALUE, headerName });
     }
 
-    getAllResponseTraces() {
+    public getAllResponseTraces() {
         return this.sendMessage({ type: MSG_GET_ALL_RESPONSE_TRACES });
     }
 
-    clearData() {
+    public clearData() {
         return this.sendMessage({ type: MSG_CLEAR });
     }
 
-    getPreference(key: string): Promise<unknown> {
+    public getPreference(key: string): Promise<unknown> {
         return new Promise((resolve) => {
             chrome.storage?.local?.get([key], (result) => {
                 resolve(result?.[key] ?? null);
@@ -111,7 +111,7 @@ export class ChromeApi {
         });
     }
 
-    setPreference(key: string, value: unknown) {
+    public setPreference(key: string, value: unknown) {
         chrome.storage?.local?.set({ [key]: value });
     }
 }

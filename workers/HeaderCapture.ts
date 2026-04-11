@@ -2,15 +2,15 @@ import { ChromeApi } from "../services/ChromeApi";
 import { STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS } from "../constants";
 
 export class HeaderCapture {
-    api: ChromeApi;
-    currentActiveTabId: number | null = null;
-    URL_FILTER: chrome.webRequest.RequestFilter = { urls: ["*://*.scriptsense.co.nz/*"] };
+    private api: ChromeApi;
+    private currentActiveTabId: number | null = null;
+    private URL_FILTER: chrome.webRequest.RequestFilter = { urls: ["*://*.scriptsense.co.nz/*"] };
 
     constructor(api: ChromeApi) {
         this.api = api;
     }
 
-    async init() {
+    public async init() {
         try {
             const tabs = await this.api.queryActiveTabs();
             if (tabs && tabs.length) this.currentActiveTabId = tabs[0].id ?? null;
@@ -18,11 +18,11 @@ export class HeaderCapture {
             console.warn("Header Clipper init tabs.query failed:", e);
         }
 
-        this._bindTabListeners();
-        this._bindWebRequestListeners();
+        this.bindTabListeners();
+        this.bindWebRequestListeners();
     }
 
-    _bindTabListeners() {
+    private bindTabListeners() {
         this.api.onTabActivated((activeInfo) => {
             this.currentActiveTabId = activeInfo.tabId;
         });
@@ -35,7 +35,7 @@ export class HeaderCapture {
         });
     }
 
-    _bindWebRequestListeners() {
+    private bindWebRequestListeners() {
         this.api.onBeforeSendHeaders((details) => {
             try {
                 if (!details.requestHeaders) return;
@@ -47,7 +47,7 @@ export class HeaderCapture {
 
                 const authHeader = details.requestHeaders.find((h) => h.name.toLowerCase() === "authorization");
                 if (authHeader && authHeader.value) {
-                    this._saveAuthHeader("Authorization", authHeader.value, details.url, details.tabId);
+                    this.saveAuthHeader("Authorization", authHeader.value, details.url, details.tabId);
                 }
             } catch (e) {
                 console.error("Header Clipper (current-tab) error:", e);
@@ -65,7 +65,7 @@ export class HeaderCapture {
 
                 const traceIdHeader = details.responseHeaders.find((h) => h.name.toLowerCase() === "x-traceid");
                 if (traceIdHeader) {
-                    this._saveTraceId("X-Traceid", traceIdHeader.value!, details.url, details.tabId, details.requestId);
+                    this.saveTraceId("X-Traceid", traceIdHeader.value!, details.url, details.tabId, details.requestId);
                 }
             } catch (e) {
                 console.error("Header Clipper (current-tab) error:", e);
@@ -111,7 +111,7 @@ export class HeaderCapture {
 
                 const operationName = parsed.operationName || null;
                 if (operationName) {
-                    this._saveOperationName(operationName, details.tabId, details.requestId);
+                    this.saveOperationName(operationName, details.tabId, details.requestId);
                 }
             } catch (err) {
                 console.error("onBeforeRequest error:", err);
@@ -119,7 +119,7 @@ export class HeaderCapture {
         }, this.URL_FILTER);
     }
 
-    async _saveAuthHeader(headerName: string, headerValue: string, url: string, tabId: number) {
+    private async saveAuthHeader(headerName: string, headerValue: string, url: string, tabId: number) {
         if (!this.currentActiveTabId || tabId !== this.currentActiveTabId) return;
         const payload = {
             tabId: String(tabId),
@@ -130,7 +130,7 @@ export class HeaderCapture {
         await this.api.setStorage(STORE_REQUEST_HEADERS, payload);
     }
 
-    async _saveTraceId(headerName: string, headerValue: string, url: string, tabId: number, requestId: string) {
+    private async saveTraceId(headerName: string, headerValue: string, url: string, tabId: number, requestId: string) {
         if (!this.currentActiveTabId || tabId !== this.currentActiveTabId) return;
         const saved = await this.api.getStorage(STORE_RESPONSE_HEADERS);
         saved[requestId] = {
@@ -143,7 +143,7 @@ export class HeaderCapture {
         await this.api.setStorage(STORE_RESPONSE_HEADERS, saved);
     }
 
-    async _saveOperationName(operationName: string, tabId: number, requestId: string) {
+    private async saveOperationName(operationName: string, tabId: number, requestId: string) {
         if (!this.currentActiveTabId || tabId !== this.currentActiveTabId) return;
         const saved = await this.api.getStorage(STORE_REQUEST_PAYLOADS);
         saved[requestId] = {

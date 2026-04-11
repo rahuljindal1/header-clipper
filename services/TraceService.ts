@@ -13,40 +13,40 @@ import { Message, Trace } from "../types";
 type SendResponse = (response: unknown) => void;
 
 export class TraceService {
-    api: ChromeApi;
+    private api: ChromeApi;
 
     constructor(api: ChromeApi) {
         this.api = api;
     }
 
-    listen() {
+    public listen() {
         this.api.onMessage((msg: Message, _sender: chrome.runtime.MessageSender, sendResponse: SendResponse) =>
-            this._dispatch(msg, _sender, sendResponse),
+            this.dispatch(msg, _sender, sendResponse),
         );
     }
 
-    _dispatch(msg: Message, _sender: chrome.runtime.MessageSender, sendResponse: SendResponse) {
+    private dispatch(msg: Message, _sender: chrome.runtime.MessageSender, sendResponse: SendResponse) {
         if (!msg || !msg.type) return;
 
         if (msg.type === MSG_GET_ALL_REQUEST_HEADERS) {
-            this._getAllHeaders(sendResponse);
+            this.getAllHeaders(sendResponse);
             return true;
         }
         if (msg.type === MSG_GET_REQUEST_HEADER_VALUE) {
-            this._getHeaderValue(msg, sendResponse);
+            this.getHeaderValue(msg, sendResponse);
             return true;
         }
         if (msg.type === MSG_GET_ALL_RESPONSE_TRACES) {
-            this._getAllTraces(sendResponse);
+            this.getAllTraces(sendResponse);
             return true;
         }
         if (msg.type === MSG_CLEAR) {
-            this._clear(sendResponse);
+            this.clear(sendResponse);
             return true;
         }
     }
 
-    _getAllHeaders(sendResponse: SendResponse) {
+    private getAllHeaders(sendResponse: SendResponse) {
         this.api
             .getStorage(STORE_REQUEST_HEADERS)
             .then((obj: any) => {
@@ -70,7 +70,7 @@ export class TraceService {
             });
     }
 
-    _getHeaderValue(msg: Message, sendResponse: SendResponse) {
+    private getHeaderValue(msg: Message, sendResponse: SendResponse) {
         this.api
             .getStorage(STORE_REQUEST_HEADERS)
             .then((obj: any) => {
@@ -88,7 +88,7 @@ export class TraceService {
             });
     }
 
-    _getAllTraces(sendResponse: SendResponse) {
+    private getAllTraces(sendResponse: SendResponse) {
         Promise.all([this.api.getStorage(STORE_RESPONSE_HEADERS), this.api.getStorage(STORE_REQUEST_PAYLOADS)])
             .then(([responseHeaders, requestPayloads]: [any, any]) => {
                 if (Object.keys(responseHeaders).length === 0) {
@@ -119,7 +119,7 @@ export class TraceService {
             });
     }
 
-    _clear(sendResponse: SendResponse) {
+    private clear(sendResponse: SendResponse) {
         this.api
             .removeStorage(STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS)
             .then(() => sendResponse({ ok: true }));
