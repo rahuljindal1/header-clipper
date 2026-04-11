@@ -104,11 +104,11 @@ Open `popup.html` directly in a browser. The `mock.js` script detects the absenc
 
 ## Permissions
 
-| Permission       | Reason                                                 |
-|------------------|--------------------------------------------------------|
-| `webRequest`     | Intercept request/response headers                     |
-| `tabs`           | Track the active tab                                   |
-| `storage`        | Persist captured headers and preferences               |
-| `clipboardWrite` | Copy values to clipboard                               |
-| `activeTab`      | Access the currently focused tab                       |
-| `host_permissions: *://*/*` | Monitor requests across all origins        |
+| Permission                  | Reason                                   |
+| --------------------------- | ---------------------------------------- |
+| `webRequest`                | Intercept request/response headers       |
+| `tabs`                      | Track the active tab                     |
+| `storage`                   | Persist captured headers and preferences |
+| `clipboardWrite`            | Copy values to clipboard                 |
+| `activeTab`                 | Access the currently focused tab         |
+| `host_permissions: *://*/*` | Monitor requests across all origins      |

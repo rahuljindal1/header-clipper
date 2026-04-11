@@ -6,7 +6,8 @@ import {
 } from "./constants";
 
 export interface Message {
-    type: typeof MSG_GET_ALL_REQUEST_HEADERS
+    type:
+        | typeof MSG_GET_ALL_REQUEST_HEADERS
         | typeof MSG_GET_REQUEST_HEADER_VALUE
         | typeof MSG_GET_ALL_RESPONSE_TRACES
         | typeof MSG_CLEAR;

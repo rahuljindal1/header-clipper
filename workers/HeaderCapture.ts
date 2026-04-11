@@ -1,9 +1,5 @@
 import { ChromeApi } from "../services/ChromeApi";
-import {
-    STORE_REQUEST_HEADERS,
-    STORE_RESPONSE_HEADERS,
-    STORE_REQUEST_PAYLOADS,
-} from "../constants";
+import { STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS } from "../constants";
 
 export class HeaderCapture {
     api: ChromeApi;
@@ -34,11 +30,7 @@ export class HeaderCapture {
         this.api.onTabRemoved((tabId) => {
             if (tabId === this.currentActiveTabId) {
                 this.currentActiveTabId = null;
-                this.api.removeStorage(
-                    STORE_REQUEST_HEADERS,
-                    STORE_RESPONSE_HEADERS,
-                    STORE_REQUEST_PAYLOADS
-                );
+                this.api.removeStorage(STORE_REQUEST_HEADERS, STORE_RESPONSE_HEADERS, STORE_REQUEST_PAYLOADS);
             }
         });
     }
@@ -53,9 +45,7 @@ export class HeaderCapture {
                 const host = urlObj.hostname;
                 if (!host.startsWith("api.") || !host.endsWith(".scriptsense.co.nz")) return;
 
-                const authHeader = details.requestHeaders.find(
-                    (h) => h.name.toLowerCase() === "authorization"
-                );
+                const authHeader = details.requestHeaders.find((h) => h.name.toLowerCase() === "authorization");
                 if (authHeader && authHeader.value) {
                     this._saveAuthHeader("Authorization", authHeader.value, details.url, details.tabId);
                 }
@@ -73,9 +63,7 @@ export class HeaderCapture {
                 const host = urlObj.hostname;
                 if (!host.startsWith("api.") || !host.endsWith(".scriptsense.co.nz")) return;
 
-                const traceIdHeader = details.responseHeaders.find(
-                    (h) => h.name.toLowerCase() === "x-traceid"
-                );
+                const traceIdHeader = details.responseHeaders.find((h) => h.name.toLowerCase() === "x-traceid");
                 if (traceIdHeader) {
                     this._saveTraceId("X-Traceid", traceIdHeader.value!, details.url, details.tabId, details.requestId);
                 }
@@ -95,6 +83,7 @@ export class HeaderCapture {
                         if (!chunk || !chunk.bytes) return "";
                         try {
                             return new TextDecoder("utf-8").decode(chunk.bytes);
+                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         } catch (e) {
                             return "";
                         }
@@ -115,6 +104,7 @@ export class HeaderCapture {
                 let parsed: { operationName?: string };
                 try {
                     parsed = JSON.parse(bodyString);
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 } catch (e) {
                     return;
                 }

@@ -1,14 +1,14 @@
 version: "3.9"
 
 services:
-  dev:
-    container_name: header-clipper-dev
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - .:/workspace
-      - ${HOME}/.ssh:/home/node/.ssh:ro
-      - ${HOME}/.gitconfig:/home/node/.gitconfig:ro
-    working_dir: /workspace
-    command: sleep infinity
+    dev:
+        container_name: header-clipper-dev
+        build:
+            context: .
+            dockerfile: Dockerfile
+        volumes:
+            - .:/workspace
+            - ${HOME}/.ssh:/home/node/.ssh:ro
+            - ${HOME}/.gitconfig:/home/node/.gitconfig:ro
+        working_dir: /workspace
+        command: sleep infinity

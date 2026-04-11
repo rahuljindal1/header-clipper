@@ -19,8 +19,18 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
         GET_ALL_RESPONSE_TRACES: {
             ok: true,
             data: [
-                { traceId: "abc123def456ghi789jkl012mno345pqr678stu901vwx", requestId: "1001", updatedAt: Date.now(), operationName: "GetPatientDetails" },
-                { traceId: "fed987cba654zyx321wvu098tsr765qpo432nml109kji", requestId: "1002", updatedAt: Date.now() - 30000, operationName: "ListPrescriptions" },
+                {
+                    traceId: "abc123def456ghi789jkl012mno345pqr678stu901vwx",
+                    requestId: "1001",
+                    updatedAt: Date.now(),
+                    operationName: "GetPatientDetails",
+                },
+                {
+                    traceId: "fed987cba654zyx321wvu098tsr765qpo432nml109kji",
+                    requestId: "1002",
+                    updatedAt: Date.now() - 30000,
+                    operationName: "ListPrescriptions",
+                },
                 { traceId: "1a2b3c4d5e6f7g8h9i0j", requestId: "1003", updatedAt: Date.now() - 60000 },
             ],
         },
@@ -31,18 +41,24 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
     window.chrome = {
         runtime: {
             sendMessage: function (msg, cb) {
-                setTimeout(function () { cb(mockData[msg.type] || { ok: false }); }, 150);
+                setTimeout(function () {
+                    cb(mockData[msg.type] || { ok: false });
+                }, 150);
             },
         },
         storage: {
             local: {
                 get: function (keys, cb) {
                     var result = {};
-                    keys.forEach(function (k) { if (mockStorage[k] !== undefined) result[k] = mockStorage[k]; });
+                    keys.forEach(function (k) {
+                        if (mockStorage[k] !== undefined) result[k] = mockStorage[k];
+                    });
                     if (cb) cb(result);
                 },
                 set: function (obj, cb) {
-                    Object.keys(obj).forEach(function (k) { mockStorage[k] = obj[k]; });
+                    Object.keys(obj).forEach(function (k) {
+                        mockStorage[k] = obj[k];
+                    });
                     if (cb) cb();
                 },
             },

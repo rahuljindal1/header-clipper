@@ -50,13 +50,15 @@ export class PopupController {
         const resp: HeadersResponse = await this.api.getAllRequestHeaders();
 
         if (!resp || !resp.ok) {
-            this.els.container!.innerHTML = "<div class='empty-state'><i class='fas fa-exclamation-triangle'></i><p>Error reading header data.</p></div>";
+            this.els.container!.innerHTML =
+                "<div class='empty-state'><i class='fas fa-exclamation-triangle'></i><p>Error reading header data.</p></div>";
             return;
         }
 
         const data = resp.data;
         if (!data) {
-            this.els.container!.innerHTML = "<div class='empty-state'><i class='fas fa-satellite-dish'></i><p>No headers captured yet.<br>Trigger a request from the active tab.</p></div>";
+            this.els.container!.innerHTML =
+                "<div class='empty-state'><i class='fas fa-satellite-dish'></i><p>No headers captured yet.<br>Trigger a request from the active tab.</p></div>";
             return;
         }
 
@@ -104,13 +106,15 @@ export class PopupController {
         const resp: TracesResponse = await this.api.getAllResponseTraces();
 
         if (!resp || !resp.ok) {
-            this.els.traceContainer!.innerHTML = "<div class='empty-state'><i class='fas fa-exclamation-triangle'></i><p>Error reading trace data.</p></div>";
+            this.els.traceContainer!.innerHTML =
+                "<div class='empty-state'><i class='fas fa-exclamation-triangle'></i><p>Error reading trace data.</p></div>";
             return;
         }
 
         const data = resp.data;
         if (!data || data.length === 0) {
-            this.els.traceContainer!.innerHTML = "<div class='empty-state'><i class='fas fa-route'></i><p>No traces captured yet.<br>Trigger a request from the active tab.</p></div>";
+            this.els.traceContainer!.innerHTML =
+                "<div class='empty-state'><i class='fas fa-route'></i><p>No traces captured yet.<br>Trigger a request from the active tab.</p></div>";
             return;
         }
 
@@ -141,7 +145,9 @@ export class PopupController {
 
             const small = document.createElement("div");
             small.className = "trace-small";
-            small.textContent = trace.traceId ? `Trace ID: ${trace.traceId.substring(0, 40)}${trace.traceId.length > 40 ? "…" : ""}` : "Trace ID: —";
+            small.textContent = trace.traceId
+                ? `Trace ID: ${trace.traceId.substring(0, 40)}${trace.traceId.length > 40 ? "…" : ""}`
+                : "Trace ID: —";
             small.title = trace.traceId || "";
 
             left.appendChild(req);

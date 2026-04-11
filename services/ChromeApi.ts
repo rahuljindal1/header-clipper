@@ -10,9 +10,7 @@ export class ChromeApi {
     // ── Storage ──
 
     getStorage(key: string): Promise<any> {
-        return new Promise((resolve) =>
-            chrome.storage.local.get([key], (r) => resolve(r[key] || {}))
-        );
+        return new Promise((resolve) => chrome.storage.local.get([key], (r) => resolve(r[key] || {})));
     }
 
     setStorage(key: string, value: any): Promise<void> {
@@ -45,14 +43,18 @@ export class ChromeApi {
     // ── Web Request ──
 
     onBeforeSendHeaders(
-        callback: (details: chrome.webRequest.OnBeforeSendHeadersDetails) => chrome.webRequest.BlockingResponse | undefined,
+        callback: (
+            details: chrome.webRequest.OnBeforeSendHeadersDetails,
+        ) => chrome.webRequest.BlockingResponse | undefined,
         filter: chrome.webRequest.RequestFilter,
     ) {
         chrome.webRequest.onBeforeSendHeaders.addListener(callback, filter, ["requestHeaders"]);
     }
 
     onHeadersReceived(
-        callback: (details: chrome.webRequest.OnHeadersReceivedDetails) => chrome.webRequest.BlockingResponse | undefined,
+        callback: (
+            details: chrome.webRequest.OnHeadersReceivedDetails,
+        ) => chrome.webRequest.BlockingResponse | undefined,
         filter: chrome.webRequest.RequestFilter,
     ) {
         chrome.webRequest.onHeadersReceived.addListener(callback, filter, ["responseHeaders"]);
@@ -67,7 +69,13 @@ export class ChromeApi {
 
     // ── Runtime messaging ──
 
-    onMessage(callback: (msg: Message, sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void) => void) {
+    onMessage(
+        callback: (
+            msg: Message,
+            sender: chrome.runtime.MessageSender,
+            sendResponse: (response?: unknown) => void,
+        ) => void,
+    ) {
         chrome.runtime.onMessage.addListener(callback);
     }
 

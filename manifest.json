@@ -9,17 +9,8 @@
             "48": "icons/icon48.png"
         }
     },
-    "permissions": [
-        "webRequest",
-        "tabs",
-        "storage",
-        "clipboardWrite",
-        "activeTab"
-    ],
-    "host_permissions": [
-        "http://*/*",
-        "https://*/*"
-    ],
+    "permissions": ["webRequest", "tabs", "storage", "clipboardWrite", "activeTab"],
+    "host_permissions": ["http://*/*", "https://*/*"],
     "background": {
         "service_worker": "background.js"
     }
