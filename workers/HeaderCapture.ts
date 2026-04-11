@@ -1,20 +1,23 @@
+import { ChromeApi } from "../services/ChromeApi";
 import {
     STORE_REQUEST_HEADERS,
     STORE_RESPONSE_HEADERS,
     STORE_REQUEST_PAYLOADS,
-} from "../constants.js";
+} from "../constants";
 
 export class HeaderCapture {
-    constructor(api) {
+    api: ChromeApi;
+    currentActiveTabId: number | null = null;
+    URL_FILTER: chrome.webRequest.RequestFilter = { urls: ["*://*.scriptsense.co.nz/*"] };
+
+    constructor(api: ChromeApi) {
         this.api = api;
-        this.currentActiveTabId = null;
-        this.URL_FILTER = { urls: ["*://*.scriptsense.co.nz/*"] };
     }
 
     async init() {
         try {
             const tabs = await this.api.queryActiveTabs();
-            if (tabs && tabs.length) this.currentActiveTabId = tabs[0].id;
+            if (tabs && tabs.length) this.currentActiveTabId = tabs[0].id ?? null;
         } catch (e) {
             console.warn("Header Clipper init tabs.query failed:", e);
         }
@@ -74,7 +77,7 @@ export class HeaderCapture {
                     (h) => h.name.toLowerCase() === "x-traceid"
                 );
                 if (traceIdHeader) {
-                    this._saveTraceId("X-Traceid", traceIdHeader.value, details.url, details.tabId, details.requestId);
+                    this._saveTraceId("X-Traceid", traceIdHeader.value!, details.url, details.tabId, details.requestId);
                 }
             } catch (e) {
                 console.error("Header Clipper (current-tab) error:", e);
@@ -101,7 +104,7 @@ export class HeaderCapture {
                     const fd = details.requestBody.formData;
                     for (const k in fd) {
                         if (Array.isArray(fd[k]) && fd[k].length) {
-                            bodyString = fd[k][0];
+                            bodyString = fd[k][0] as string;
                             break;
                         }
                     }
@@ -109,7 +112,7 @@ export class HeaderCapture {
 
                 if (!bodyString) return;
 
-                let parsed;
+                let parsed: { operationName?: string };
                 try {
                     parsed = JSON.parse(bodyString);
                 } catch (e) {
@@ -126,7 +129,7 @@ export class HeaderCapture {
         }, this.URL_FILTER);
     }
 
-    async _saveAuthHeader(headerName, headerValue, url, tabId) {
+    async _saveAuthHeader(headerName: string, headerValue: string, url: string, tabId: number) {
         if (!this.currentActiveTabId || tabId !== this.currentActiveTabId) return;
         const payload = {
             tabId: String(tabId),
@@ -137,7 +140,7 @@ export class HeaderCapture {
         await this.api.setStorage(STORE_REQUEST_HEADERS, payload);
     }
 
-    async _saveTraceId(headerName, headerValue, url, tabId, requestId) {
+    async _saveTraceId(headerName: string, headerValue: string, url: string, tabId: number, requestId: string) {
         if (!this.currentActiveTabId || tabId !== this.currentActiveTabId) return;
         const saved = await this.api.getStorage(STORE_RESPONSE_HEADERS);
         saved[requestId] = {
@@ -150,7 +153,7 @@ export class HeaderCapture {
         await this.api.setStorage(STORE_RESPONSE_HEADERS, saved);
     }
 
-    async _saveOperationName(operationName, tabId, requestId) {
+    async _saveOperationName(operationName: string, tabId: number, requestId: string) {
         if (!this.currentActiveTabId || tabId !== this.currentActiveTabId) return;
         const saved = await this.api.getStorage(STORE_REQUEST_PAYLOADS);
         saved[requestId] = {

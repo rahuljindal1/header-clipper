@@ -1,5 +1,5 @@
-import { ChromeApi } from "./services/ChromeApi.js";
-import { PopupController } from "./ui/PopupController.js";
+import { ChromeApi } from "./services/ChromeApi";
+import { PopupController } from "./ui/PopupController";
 
 document.addEventListener("DOMContentLoaded", () => {
     const api = new ChromeApi();
