@@ -12,24 +12,30 @@
     <title>Header Clipper</title>
   </head>
   <body>
-    <div class="title">ScriptSense — Header Clipper</div>
+    <div class="header-bar">
+      <i class="fas fa-shield-alt"></i>
+      <div class="title">ScriptSense — Header Clipper</div>
+    </div>
+
     <div class="hint">
       Only header names are shown. Click the copy icon to copy the hidden value
       for the current active tab.
     </div>
 
     <div class="controls">
-      <button id="clearBtn">Clear</button>
-      <button id="refreshBtn">Refresh</button>
+      <button id="clearBtn"><i class="fas fa-trash-alt"></i> Clear</button>
+      <button id="refreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
     </div>
 
     <div id="toast" class="toast"></div>
 
-    <div id="container" class="container">
-      <div class="small">Loading…</div>
-    </div>
+    <div class="content">
+      <div id="container" class="container">
+        <div class="small">Loading…</div>
+      </div>
 
-    <div id="responseTraceContainer" class="container"></div>
+      <div id="responseTraceContainer" class="container"></div>
+    </div>
 
     <script src="mock.js"></script>
     <script defer src="popup.js"></script>

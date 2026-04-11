@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function render() {
-        container.innerHTML = "<div class='small'>Loading…</div>";
+        container.innerHTML = "<div class='small'><i class='fas fa-spinner fa-spin'></i> Loading…</div>";
 
         await renderRequestHeader()
         await renderResponseTraces()
@@ -23,30 +23,34 @@ document.addEventListener("DOMContentLoaded", () => {
         return new Promise((resolve) => {
             chrome.runtime.sendMessage({ type: "GET_ALL_REQUEST_HEADERS" }, (resp) => {
                 if (!resp || !resp.ok) {
-                    container.innerHTML = "<div class='small'>Error reading data.</div>";
+                    container.innerHTML = "<div class='empty-state'><i class='fas fa-exclamation-triangle'></i><p>Error reading header data.</p></div>";
                     resolve();
                     return;
                 }
                 const data = resp.data;
                 if (!data) {
-                    container.innerHTML = "<div class='small'>No Authorization header captured for the current tab. Trigger a request from the tab.</div>";
+                    container.innerHTML = "<div class='empty-state'><i class='fas fa-satellite-dish'></i><p>No headers captured yet.<br>Trigger a request from the active tab.</p></div>";
                     resolve();
                     return;
                 }
 
                 container.innerHTML = "";
 
+                const heading = document.createElement("div");
+                heading.className = "section-heading";
+                heading.textContent = "Request Headers";
+                container.appendChild(heading);
+
                 const urlDiv = document.createElement("div");
-                urlDiv.className = "section-heading";
-                urlDiv.style.marginTop = "16px";
+                urlDiv.className = "url-display";
                 urlDiv.title = data.url;
                 urlDiv.textContent = data.url || `Tab ${data.tabId}`;
                 container.appendChild(urlDiv);
 
                 const meta = document.createElement("div");
-                meta.className = "small";
+                meta.className = "meta";
                 const t = new Date(data.updatedAt);
-                meta.textContent = `Captured: ${t.toLocaleString()}`;
+                meta.textContent = `Captured ${t.toLocaleString()}`;
                 container.appendChild(meta);
 
                 data.headerNames.forEach(hName => {
@@ -97,13 +101,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return new Promise((resolve) => {
             chrome.runtime.sendMessage({ type: "GET_ALL_RESPONSE_TRACES" }, (resp) => {
                 if (!resp || !resp.ok) {
-                    responseTraceContainer.innerHTML = "<div class='small'>Error reading data.</div>";
+                    responseTraceContainer.innerHTML = "<div class='empty-state'><i class='fas fa-exclamation-triangle'></i><p>Error reading trace data.</p></div>";
                     resolve();
                     return;
                 }
                 const data = resp.data;
                 if (!data || data.length === 0) {
-                    responseTraceContainer.innerHTML = "<div class='small'>No traces captured yet. Trigger a request from the tab.</div>";
+                    responseTraceContainer.innerHTML = "<div class='empty-state'><i class='fas fa-route'></i><p>No traces captured yet.<br>Trigger a request from the active tab.</p></div>";
                     resolve();
                     return;
                 }
