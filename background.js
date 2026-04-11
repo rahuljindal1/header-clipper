@@ -126,13 +126,19 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
             const authHeader = details.requestHeaders.find(
                 (h) => h.name.toLowerCase() === "authorization"
             );
-            if (authHeader) {
-                saveRequestHeaderForCurrentTab(
-                    "Authorization",
-                    authHeader.value.split(" ")[1],
-                    details.url,
-                    details.tabId
-                );
+            if (authHeader && authHeader.value) {
+                const parts = authHeader.value.split(" ");
+                const token = parts.length === 2 && parts[0].toLowerCase() === "bearer"
+                    ? parts[1]
+                    : authHeader.value;
+                if (token) {
+                    saveRequestHeaderForCurrentTab(
+                        "Authorization",
+                        token,
+                        details.url,
+                        details.tabId
+                    );
+                }
             }
         } catch (e) {
             console.error("Header Clipper (current-tab) error:", e);
@@ -284,6 +290,9 @@ function sendAllRequestHeaders(sendResponse) {
                 },
             });
         }
+    }).catch((err) => {
+        console.error("sendAllRequestHeaders error:", err);
+        sendResponse({ ok: false, error: "Failed to read request headers." });
     });
 }
 
@@ -298,6 +307,9 @@ function sendRequestHeaderValue(msg, sendResponse) {
             if (val) sendResponse({ ok: true, value: val });
             else sendResponse({ ok: false, error: "Header not found." });
         }
+    }).catch((err) => {
+        console.error("sendRequestHeaderValue error:", err);
+        sendResponse({ ok: false, error: "Failed to read header value." });
     });
 }
 
@@ -308,17 +320,15 @@ function sendAllResponseTraces(sendResponse) {
     ]).then(([allResponseHeaders, allRequestPayloads]) => {
         const responseHeaders = allResponseHeaders[RESPONSE_HEADER_STORE_KEY] || {};
         const requestPayloads = allRequestPayloads[REQUEST_BODY_STORE_KEY] || {};
-        if (!responseHeaders) {
-            sendResponse({
-                ok: true,
-                data: null,
-            });
+
+        if (Object.keys(responseHeaders).length === 0) {
+            sendResponse({ ok: true, data: null });
+            return;
         }
 
         const traces = [];
         Object.entries(responseHeaders).forEach(([requestId, value]) => {
             const traceId = value.headers["X-Traceid"];
-            console.log(value)
             if (traceId) {
                 const requestBody = requestPayloads[requestId];
                 traces.push({
@@ -330,11 +340,14 @@ function sendAllResponseTraces(sendResponse) {
             }
         });
 
-        // Reverse races to get the latest first
+        // Reverse traces to get the latest first
         traces.reverse();
         sendResponse({
             ok: true,
             data: traces,
         });
+    }).catch((err) => {
+        console.error("sendAllResponseTraces error:", err);
+        sendResponse({ ok: false, error: "Failed to read response traces." });
     });
 }

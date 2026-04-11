@@ -11,14 +11,6 @@ module.exports = {
         path: path.resolve(__dirname, 'dist'),
     },
     mode: 'production',
-    module: {
-        rules: [
-            {
-                test: /\.css$/,
-                use: ['style-loader', 'css-loader'],
-            },
-        ],
-    },
     plugins: [
         new CopyPlugin({
             patterns: [
