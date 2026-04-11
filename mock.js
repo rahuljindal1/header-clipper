@@ -47,8 +47,15 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
                 setTimeout(function () {
                     var resp = mockData[msg.type] || { ok: false };
 
+                    if (msg.type === "CLEAR") {
+                        mockData.GET_ALL_REQUEST_HEADERS = { ok: true, data: null };
+                        mockData.GET_ALL_RESPONSE_TRACES = { ok: true, data: [] };
+                        resp = { ok: true };
+                    }
+
                     if (msg.type === "GET_ALL_RESPONSE_TRACES" && resp.data) {
                         var data = resp.data.slice();
+                        data.sort(function (a, b) { return b.updatedAt - a.updatedAt; });
                         var ttl = Number(mockStorage["tracesTtlMinutes"]) || 0;
                         if (ttl > 0) {
                             var cutoff = Date.now() - ttl * 60 * 1000;
