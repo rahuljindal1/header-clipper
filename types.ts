@@ -4,6 +4,7 @@ import {
     MSG_GET_ALL_RESPONSE_TRACES,
     MSG_CLEAR,
     MSG_UPDATE_BADGE,
+    MSG_DELETE_TRACE,
 } from "./constants";
 
 export interface Message {
@@ -12,8 +13,10 @@ export interface Message {
         | typeof MSG_GET_REQUEST_HEADER_VALUE
         | typeof MSG_GET_ALL_RESPONSE_TRACES
         | typeof MSG_CLEAR
-        | typeof MSG_UPDATE_BADGE;
+        | typeof MSG_UPDATE_BADGE
+        | typeof MSG_DELETE_TRACE;
     headerName?: string;
+    payload?: string;
 }
 
 export interface HeadersResponse {
@@ -39,6 +42,7 @@ export interface Trace {
     updatedAt: number;
     operationName?: string;
     count: number;
+    groupKey: string;
 }
 
 export interface TracesResponse {
@@ -48,6 +52,10 @@ export interface TracesResponse {
 }
 
 export interface ClearResponse {
+    ok: boolean;
+}
+
+export interface DeleteTraceResponse {
     ok: boolean;
 }
 

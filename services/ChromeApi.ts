@@ -3,6 +3,7 @@ import {
     MSG_GET_REQUEST_HEADER_VALUE,
     MSG_GET_ALL_RESPONSE_TRACES,
     MSG_CLEAR,
+    MSG_DELETE_TRACE,
 } from "../constants";
 import { Message } from "../types";
 
@@ -115,6 +116,10 @@ export class ChromeApi {
 
     public clearData() {
         return this.sendMessage({ type: MSG_CLEAR });
+    }
+
+    public deleteTrace(key: string) {
+        return this.sendMessage({ type: MSG_DELETE_TRACE, payload: key });
     }
 
     public getPreference(key: string): Promise<unknown> {

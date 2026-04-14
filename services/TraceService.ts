@@ -6,6 +6,7 @@ import {
     MSG_GET_ALL_RESPONSE_TRACES,
     MSG_CLEAR,
     MSG_UPDATE_BADGE,
+    MSG_DELETE_TRACE,
     STORE_REQUEST_HEADERS,
     STORE_RESPONSE_HEADERS,
     STORE_REQUEST_PAYLOADS,
@@ -49,6 +50,10 @@ export class TraceService {
         }
         if (msg.type === MSG_CLEAR) {
             this.clear(sendResponse);
+            return true;
+        }
+        if (msg.type === MSG_DELETE_TRACE) {
+            this.deleteTrace(msg.payload!, sendResponse);
             return true;
         }
         if (msg.type === MSG_UPDATE_BADGE) {
@@ -123,7 +128,7 @@ export class TraceService {
             if (traceId) {
                 const requestBody = requestPayloads[requestId];
                 const operationName = requestBody?.operationName;
-                const key = operationName || value.url || requestId;
+                const key = this.resolveGroupKey(operationName, value.url, requestId);
                 const existing = grouped.get(key);
 
                 if (existing) {
@@ -140,6 +145,7 @@ export class TraceService {
                         updatedAt: value.updatedAt,
                         operationName,
                         count: 1,
+                        groupKey: key,
                     });
                 }
             }
@@ -184,6 +190,37 @@ export class TraceService {
             .then(() => {
                 this.badge.clear();
                 sendResponse({ ok: true });
+            });
+    }
+
+    private resolveGroupKey(operationName?: string, url?: string, requestId?: string): string {
+        return operationName || url || requestId || "";
+    }
+
+    private deleteTrace(traceKey: string, sendResponse: SendResponse) {
+        Promise.all([
+            this.api.getStorage(STORE_RESPONSE_HEADERS),
+            this.api.getStorage(STORE_REQUEST_PAYLOADS),
+        ])
+            .then(async ([responseHeaders, requestPayloads]) => {
+                Object.keys(responseHeaders).forEach((requestId) => {
+                    const payload = requestPayloads[requestId];
+                    const entry = responseHeaders[requestId];
+                    const key = this.resolveGroupKey(payload?.operationName, entry.url, requestId);
+                    if (key === traceKey) {
+                        delete responseHeaders[requestId];
+                        delete requestPayloads[requestId];
+                    }
+                });
+
+                await this.api.setStorage(STORE_RESPONSE_HEADERS, responseHeaders);
+                await this.api.setStorage(STORE_REQUEST_PAYLOADS, requestPayloads);
+                await this.refreshBadge();
+                sendResponse({ ok: true });
+            })
+            .catch((err: unknown) => {
+                console.error("deleteTrace error:", err);
+                sendResponse({ ok: false });
             });
     }
 }

@@ -4,6 +4,7 @@ export const MSG_GET_REQUEST_HEADER_VALUE = "GET_REQUEST_HEADER_VALUE";
 export const MSG_GET_ALL_RESPONSE_TRACES = "GET_ALL_RESPONSE_TRACES";
 export const MSG_CLEAR = "CLEAR";
 export const MSG_UPDATE_BADGE = "UPDATE_BADGE";
+export const MSG_DELETE_TRACE = "DELETE_TRACE";
 
 // Storage keys
 export const STORE_SESSION_START = "session_start";

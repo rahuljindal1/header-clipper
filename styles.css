@@ -212,6 +212,10 @@ button i {
     color: #228be6;
     background: #eff6ff;
 }
+.icon-danger:hover {
+    color: #dc2626;
+    background: #fef2f2;
+}
 
 /* ── Metadata / small text ── */
 .small {

@@ -25,6 +25,7 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
                     updatedAt: Date.now(),
                     operationName: "GetPatientDetails",
                     count: 5,
+                    groupKey: "GetPatientDetails",
                 },
                 {
                     traceId: "fed987cba654zyx321wvu098tsr765qpo432nml109kji",
@@ -32,9 +33,10 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
                     updatedAt: Date.now() - 30000,
                     operationName: "ListPrescriptions",
                     count: 1,
+                    groupKey: "ListPrescriptions",
                 },
-                { traceId: "1a2b3c4d5e6f7g8h9i0j", requestId: "1003", updatedAt: Date.now() - 60000, count: 12 },
-                { traceId: "old9876trace5432value10", requestId: "1004", updatedAt: Date.now() - 600000, operationName: "OldQuery", count: 3 },
+                { traceId: "1a2b3c4d5e6f7g8h9i0j", requestId: "1003", updatedAt: Date.now() - 60000, count: 12, groupKey: "1003" },
+                { traceId: "old9876trace5432value10", requestId: "1004", updatedAt: Date.now() - 600000, operationName: "OldQuery", count: 3, groupKey: "OldQuery" },
             ],
         },
         CLEAR: { ok: true },
@@ -46,6 +48,16 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
             sendMessage: function (msg, cb) {
                 setTimeout(function () {
                     var resp = mockData[msg.type] || { ok: false };
+
+                    if (msg.type === "DELETE_TRACE") {
+                        var traceData = mockData.GET_ALL_RESPONSE_TRACES.data;
+                        if (traceData) {
+                            mockData.GET_ALL_RESPONSE_TRACES.data = traceData.filter(function (t) {
+                                return t.groupKey !== msg.payload;
+                            });
+                        }
+                        resp = { ok: true };
+                    }
 
                     if (msg.type === "CLEAR") {
                         mockData.GET_ALL_REQUEST_HEADERS = { ok: true, data: null };

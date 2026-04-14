@@ -8,7 +8,7 @@ import {
     MSG_UPDATE_BADGE,
     STORE_SESSION_START,
 } from "../constants";
-import { HeadersResponse, HeaderValueResponse, TracesResponse, Trace, ClearResponse } from "../types";
+import { HeadersResponse, HeaderValueResponse, TracesResponse, Trace, ClearResponse, DeleteTraceResponse } from "../types";
 
 export class PopupController {
     private api: ChromeApi;
@@ -245,10 +245,15 @@ export class PopupController {
             const copyBtn = document.createElement("i");
             copyBtn.className = "fas fa-copy icon";
             copyBtn.title = "Copy traceId";
-
             copyBtn.addEventListener("click", () => this.copyTraceId(trace.traceId, copyBtn));
 
+            const deleteBtn = document.createElement("i");
+            deleteBtn.className = "fas fa-trash-alt icon icon-danger";
+            deleteBtn.title = "Remove trace";
+            deleteBtn.addEventListener("click", () => this.deleteTrace(trace));
+
             actions.appendChild(copyBtn);
+            actions.appendChild(deleteBtn);
             row.appendChild(left);
             row.appendChild(actions);
             this.els.traceContainer!.appendChild(row);
@@ -299,6 +304,11 @@ export class PopupController {
             this.showToast("Failed to copy trace id.", true);
             console.error("copy trace error:", err);
         }
+    }
+
+    private async deleteTrace(trace: Trace) {
+        const resp: DeleteTraceResponse = await this.api.deleteTrace(trace.groupKey);
+        if (resp && resp.ok) this.render();
     }
 
     private stripBearerPrefix(value: string) {
