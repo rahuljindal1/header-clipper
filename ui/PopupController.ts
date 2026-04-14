@@ -124,9 +124,6 @@ export class PopupController {
     }
 
     private async render() {
-        this.els.container!.innerHTML = "<div class='small'><i class='fas fa-spinner fa-spin'></i> Loading…</div>";
-        this.els.traceContainer!.innerHTML = "";
-
         await this.renderHeaders();
         await this.renderTraces();
     }
@@ -202,6 +199,8 @@ export class PopupController {
                 "<div class='empty-state'><i class='fas fa-route'></i><p>No traces captured yet.<br>Trigger a request from the active tab.</p></div>";
             return;
         }
+
+        this.els.traceContainer!.innerHTML = "";
 
         const header = document.createElement("div");
         header.className = "section-heading";
