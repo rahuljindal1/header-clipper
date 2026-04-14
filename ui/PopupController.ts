@@ -73,6 +73,7 @@ export class PopupController {
             const val = Number((this.els.ttlInput as HTMLInputElement).value) || 0;
             this.api.setPreference(PREF_TRACE_TTL_MINUTES, val);
             this.updateSettingsSummary();
+            this.api.sendMessage({ type: MSG_UPDATE_BADGE });
             this.render();
         });
 
@@ -80,6 +81,7 @@ export class PopupController {
             const val = Number((this.els.maxCountInput as HTMLInputElement).value) || 0;
             this.api.setPreference(PREF_TRACE_MAX_COUNT, val);
             this.updateSettingsSummary();
+            this.api.sendMessage({ type: MSG_UPDATE_BADGE });
             this.render();
         });
 
@@ -87,6 +89,7 @@ export class PopupController {
             const val = Number((this.els.minHitsInput as HTMLInputElement).value) || 0;
             this.api.setPreference(PREF_TRACE_MIN_HITS, val);
             this.updateSettingsSummary();
+            this.api.sendMessage({ type: MSG_UPDATE_BADGE });
             this.render();
         });
 

@@ -53,6 +53,36 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
                         resp = { ok: true };
                     }
 
+                    if (msg.type === "UPDATE_BADGE") {
+                        var badgeData = mockData.GET_ALL_RESPONSE_TRACES.data;
+                        if (badgeData) {
+                            var filtered = badgeData.slice();
+                            filtered.sort(function (a, b) { return b.updatedAt - a.updatedAt; });
+                            var bTtl = Number(mockStorage["tracesTtlMinutes"]) || 0;
+                            if (bTtl > 0) {
+                                var bCutoff = Date.now() - bTtl * 60 * 1000;
+                                filtered = filtered.filter(function (t) { return t.updatedAt >= bCutoff; });
+                            }
+                            var bMax = Number(mockStorage["tracesMaxCount"]) || 0;
+                            if (bMax > 0) filtered = filtered.slice(0, bMax);
+                            var bMin = Number(mockStorage["tracesMinHits"]) || 0;
+                            if (bMin > 0) filtered = filtered.filter(function (t) { return t.count >= bMin; });
+                            var mode = mockStorage["badgeMode"] || "total";
+                            var count = 0;
+                            if (filtered.length > 0) {
+                                if (mode === "max_hits") {
+                                    count = Math.max.apply(null, filtered.map(function (t) { return t.count; }));
+                                } else {
+                                    count = filtered.length;
+                                }
+                            }
+                            chrome.action.setBadgeText({ text: count > 0 ? (count > 999 ? "999+" : String(count)) : "" });
+                        } else {
+                            chrome.action.setBadgeText({ text: "" });
+                        }
+                        resp = { ok: true };
+                    }
+
                     if (msg.type === "GET_ALL_RESPONSE_TRACES" && resp.data) {
                         var data = resp.data.slice();
                         data.sort(function (a, b) { return b.updatedAt - a.updatedAt; });
@@ -70,6 +100,16 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
                             data = data.filter(function (t) { return t.count >= minHits; });
                         }
                         resp = { ok: true, data: data };
+                        var traceMode = mockStorage["badgeMode"] || "total";
+                        var badgeCount = 0;
+                        if (data.length > 0) {
+                            if (traceMode === "max_hits") {
+                                badgeCount = Math.max.apply(null, data.map(function (t) { return t.count; }));
+                            } else {
+                                badgeCount = data.length;
+                            }
+                        }
+                        chrome.action.setBadgeText({ text: badgeCount > 0 ? (badgeCount > 999 ? "999+" : String(badgeCount)) : "" });
                     }
 
                     cb(resp);
@@ -77,8 +117,29 @@ if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMess
             },
         },
         action: {
-            setBadgeText: function () {},
+            setBadgeText: function (opts) {
+                var el = document.getElementById("mockBadge");
+                if (!el) {
+                    el = document.createElement("span");
+                    el.id = "mockBadge";
+                    el.style.cssText =
+                        "display:inline-flex;align-items:center;justify-content:center;" +
+                        "min-width:20px;height:20px;padding:0 6px;border-radius:10px;" +
+                        "background:#0d9488;color:#fff;font-size:11px;font-weight:700;" +
+                        "margin-left:8px;font-family:'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;";
+                    var title = document.querySelector(".title");
+                    if (title) title.appendChild(el);
+                }
+                if (opts.text) {
+                    el.textContent = opts.text;
+                    el.style.display = "inline-flex";
+                } else {
+                    el.textContent = "";
+                    el.style.display = "none";
+                }
+            },
             setBadgeBackgroundColor: function () {},
+            setBadgeTextColor: function () {},
         },
         storage: {
             local: {

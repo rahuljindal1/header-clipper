@@ -52,8 +52,7 @@ export class TraceService {
             return true;
         }
         if (msg.type === MSG_UPDATE_BADGE) {
-            this.badge.update();
-            sendResponse({ ok: true });
+            this.refreshBadge().then(() => sendResponse({ ok: true }))
             return true;
         }
     }
@@ -100,67 +99,78 @@ export class TraceService {
             });
     }
 
-    private getAllTraces(sendResponse: SendResponse) {
-        Promise.all([
+    public async refreshBadge() {
+        const traces = await this.buildFilteredTraces();
+        await this.badge.update(traces);
+    }
+
+    private async buildFilteredTraces(): Promise<Trace[]> {
+        const [responseHeaders, requestPayloads, ttlPref, maxPref, minHitsPref] = await Promise.all([
             this.api.getStorage(STORE_RESPONSE_HEADERS),
             this.api.getStorage(STORE_REQUEST_PAYLOADS),
             this.api.getPreference(PREF_TRACE_TTL_MINUTES),
             this.api.getPreference(PREF_TRACE_MAX_COUNT),
             this.api.getPreference(PREF_TRACE_MIN_HITS),
-        ])
-            .then(([responseHeaders, requestPayloads, ttlPref, maxPref, minHitsPref]: [any, any, unknown, unknown, unknown]) => {
-                if (Object.keys(responseHeaders).length === 0) {
-                    sendResponse({ ok: true, data: null });
-                    return;
-                }
+        ]);
 
-                const grouped = new Map<string, Trace>();
-                Object.entries(responseHeaders).forEach(([requestId, value]: [string, any]) => {
-                    const traceId = value.headers["X-Traceid"];
-                    if (traceId) {
-                        const requestBody = requestPayloads[requestId];
-                        const operationName = requestBody?.operationName;
-                        const key = operationName || value.url || requestId;
-                        const existing = grouped.get(key);
+        if (Object.keys(responseHeaders).length === 0) {
+            return [];
+        }
 
-                        if (existing) {
-                            existing.count++;
-                            if (value.updatedAt > existing.updatedAt) {
-                                existing.traceId = traceId;
-                                existing.requestId = requestId;
-                                existing.updatedAt = value.updatedAt;
-                            }
-                        } else {
-                            grouped.set(key, {
-                                traceId,
-                                requestId,
-                                updatedAt: value.updatedAt,
-                                operationName,
-                                count: 1,
-                            });
-                        }
+        const grouped = new Map<string, Trace>();
+        Object.entries(responseHeaders).forEach(([requestId, value]: [string, any]) => {
+            const traceId = value.headers["X-Traceid"];
+            if (traceId) {
+                const requestBody = requestPayloads[requestId];
+                const operationName = requestBody?.operationName;
+                const key = operationName || value.url || requestId;
+                const existing = grouped.get(key);
+
+                if (existing) {
+                    existing.count++;
+                    if (value.updatedAt > existing.updatedAt) {
+                        existing.traceId = traceId;
+                        existing.requestId = requestId;
+                        existing.updatedAt = value.updatedAt;
                     }
-                });
-
-                let traces = Array.from(grouped.values()).sort((a, b) => b.updatedAt - a.updatedAt);
-
-                const ttl = Number(ttlPref) || 0;
-                if (ttl > 0) {
-                    const cutoff = Date.now() - ttl * 60 * 1000;
-                    traces = traces.filter((t) => t.updatedAt >= cutoff);
+                } else {
+                    grouped.set(key, {
+                        traceId,
+                        requestId,
+                        updatedAt: value.updatedAt,
+                        operationName,
+                        count: 1,
+                    });
                 }
+            }
+        });
 
-                const max = Number(maxPref) || 0;
-                if (max > 0) {
-                    traces = traces.slice(0, max);
-                }
+        let traces = Array.from(grouped.values()).sort((a, b) => b.updatedAt - a.updatedAt);
 
-                const minHits = Number(minHitsPref) || 0;
-                if (minHits > 0) {
-                    traces = traces.filter((t) => t.count >= minHits);
-                }
+        const ttl = Number(ttlPref) || 0;
+        if (ttl > 0) {
+            const cutoff = Date.now() - ttl * 60 * 1000;
+            traces = traces.filter((t) => t.updatedAt >= cutoff);
+        }
 
-                sendResponse({ ok: true, data: traces });
+        const max = Number(maxPref) || 0;
+        if (max > 0) {
+            traces = traces.slice(0, max);
+        }
+
+        const minHits = Number(minHitsPref) || 0;
+        if (minHits > 0) {
+            traces = traces.filter((t) => t.count >= minHits);
+        }
+
+        return traces;
+    }
+
+    private getAllTraces(sendResponse: SendResponse) {
+        this.buildFilteredTraces()
+            .then((traces) => {
+                this.badge.update(traces);
+                sendResponse({ ok: true, data: traces.length > 0 ? traces : null });
             })
             .catch((err: unknown) => {
                 console.error("getAllTraces error:", err);
